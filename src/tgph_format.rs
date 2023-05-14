@@ -2,6 +2,7 @@ use std::io::Write;
 
 pub struct TGPH {
     magic: u32,
+    version: u8,
     containers: Vec<TGPHContainer>,
 }
 
@@ -9,6 +10,7 @@ impl Default for TGPH {
     fn default() -> Self {
         return Self {
             magic: 0x48504754,
+            version: 1,
             containers: Vec::default(),
         };
     }
@@ -17,7 +19,8 @@ impl Default for TGPH {
 impl TGPH {
     pub fn serialize_into<W: Write>(self: &TGPH, stream: &mut W) -> Result<(), std::io::Error> {
         stream.write_all(&self.magic.to_le_bytes())?;
-        stream.write_all(&(self.containers.len() as u8).to_le_bytes())?;
+        stream.write_all(&self.version.to_le_bytes())?;
+        stream.write_all(&(self.containers.len() as u16).to_le_bytes())?;
         for container in self.containers.iter() {
             container.serialize_into(stream)?;
         }
@@ -117,7 +120,7 @@ mod tests {
         let tgph = TGPH::default();
         let mut output_buffer = Vec::new();
         tgph.serialize_into(&mut output_buffer).unwrap();
-        assert_eq!(output_buffer, [0x54, 0x47, 0x50, 0x48, 0x00]);
+        assert_eq!(output_buffer, [0x54, 0x47, 0x50, 0x48, 0x01, 0x00, 0x00]);
     }
 
     #[test]
@@ -129,7 +132,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
         expected.extend_from_slice(&container.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
@@ -151,7 +154,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
         expected.extend_from_slice(&container.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
@@ -177,7 +180,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
         expected.extend_from_slice(&container.name.as_bytes());
         expected.extend_from_slice(&[2]); // Element Type
@@ -206,7 +209,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
         expected.extend_from_slice(&container.name.as_bytes());
         expected.extend_from_slice(&[3]); // Element Type
@@ -246,7 +249,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x03]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x03, 0x00]);
         expected.extend_from_slice(&(container1.name.len() as u8).to_le_bytes());
         expected.extend_from_slice(&container1.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
@@ -291,7 +294,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(0xff as u8).to_le_bytes());
         expected.extend_from_slice(&(container.name.len() as u16).to_le_bytes());
         expected.extend_from_slice(&container.name.as_bytes());
@@ -321,7 +324,7 @@ mod tests {
         };
 
         let mut expected: Vec<u8> = Vec::new();
-        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01]);
+        expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(0xff as u8).to_le_bytes());
         expected.extend_from_slice(&(container.name.len() as u16).to_le_bytes());
         expected.extend_from_slice(&container.name.as_bytes());

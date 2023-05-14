@@ -22,15 +22,16 @@ Front:
 The binary is in stored in little endian format and is of the following structure
 
 ```
-+-------+-----------------+---------------+
-|       |                 |               |
-| magic | container count | ...containers |
-|       |                 |               |
-+-------+-----------------+---------------+
++-------+---------+-----------------+---------------+
+|       |         |                 |               |
+| magic | version | container count | ...containers |
+|       |         |                 |               |
++-------+---------+-----------------+---------------+
 ```
 
 - magic: 4 byte value equal to "TGPH"
-- container count: 1 byte value equal to the number of unique containers that follow
+- version: 1 byte value indicating the version of the format (most probably always 1, but good to have it)
+- container count: 2 byte value equal to the number of unique containers that follow
 
 A container is of the following structure
 
