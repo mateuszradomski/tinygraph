@@ -1,10 +1,95 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Write};
 
+trait BaseContainerElementType {
+    fn push_element(&self, tgph: &mut TGPH, name: &str);
+}
+
+impl BaseContainerElementType for String {
+    fn push_element(&self, tgph: &mut TGPH, name: &str) {
+        let limit = 1000;
+        let container = match tgph.containers.iter_mut().find(|c| c.name == name) {
+            Some(v) => v,
+            None => {
+                let new = TGPHContainer {
+                    name: name.to_string(),
+                    elements: ElementArrayType::STRING(Vec::new()),
+                };
+
+                tgph.add_container(new);
+                tgph.containers.last_mut().unwrap()
+            }
+        };
+
+        if let ElementArrayType::STRING(elements) = &mut container.elements {
+            elements.push(self.clone());
+            while elements.len() > limit {
+                elements.remove(0);
+            }
+        } else {
+            unreachable!();
+        }
+    }
+}
+
+impl BaseContainerElementType for u32 {
+    fn push_element(&self, tgph: &mut TGPH, name: &str) {
+        let limit = 1000;
+        let container = match tgph.containers.iter_mut().find(|c| c.name == name) {
+            Some(v) => v,
+            None => {
+                let new = TGPHContainer {
+                    name: name.to_string(),
+                    elements: ElementArrayType::U32(Vec::new()),
+                };
+
+                tgph.add_container(new);
+                tgph.containers.last_mut().unwrap()
+            }
+        };
+
+        if let ElementArrayType::U32(elements) = &mut container.elements {
+            elements.push(self.clone());
+            while elements.len() > limit {
+                elements.remove(0);
+            }
+        } else {
+            unreachable!();
+        }
+    }
+}
+
+impl BaseContainerElementType for f32 {
+    fn push_element(&self, tgph: &mut TGPH, name: &str) {
+        let limit = 1000;
+        let container = match tgph.containers.iter_mut().find(|c| c.name == name) {
+            Some(v) => v,
+            None => {
+                let new = TGPHContainer {
+                    name: name.to_string(),
+                    elements: ElementArrayType::FLOAT32(Vec::new()),
+                };
+
+                tgph.add_container(new);
+                tgph.containers.last_mut().unwrap()
+            }
+        };
+
+        if let ElementArrayType::FLOAT32(elements) = &mut container.elements {
+            elements.push(self.clone());
+            while elements.len() > limit {
+                elements.remove(0);
+            }
+        } else {
+            unreachable!();
+        }
+    }
+}
+
 pub struct TGPH {
     magic: u32,
     version: u8,
-    containers: Vec<TGPHContainer>,
+    pub containers: Vec<TGPHContainer>,
 }
 
 impl Default for TGPH {
@@ -49,6 +134,10 @@ impl TGPH {
     pub fn add_container(self: &mut Self, container: TGPHContainer) {
         self.containers.push(container);
     }
+
+    pub fn append<T: BaseContainerElementType>(&mut self, data: T, name: &str) {
+        data.push_element(self, name);
+    }
 }
 
 pub enum ElementArrayType {
@@ -68,8 +157,8 @@ impl ElementArrayType {
 }
 
 pub struct TGPHContainer {
-    name: String,
-    elements: ElementArrayType,
+    pub name: String,
+    pub elements: ElementArrayType,
 }
 
 impl TGPHContainer {
@@ -567,7 +656,7 @@ mod deserialize {
         } else {
             unreachable!();
         }
-         
+
         assert_eq!(tgph.containers[2].name, container_name3);
         if let ElementArrayType::STRING(elements) = &tgph.containers[2].elements {
             assert_eq!(elements.len(), 3);
@@ -616,5 +705,4 @@ mod deserialize {
             unreachable!();
         }
     }
-
 }
