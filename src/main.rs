@@ -1,6 +1,6 @@
 use std::thread::sleep;
 
-use sysinfo::{ComponentExt, DiskExt, NetworkExt, NetworksExt, ProcessExt, System, SystemExt};
+use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt};
 
 use std::io::{stdout, Write};
 

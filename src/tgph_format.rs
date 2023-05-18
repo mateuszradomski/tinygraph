@@ -1,7 +1,7 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Write};
 
-trait BaseContainerElementType {
+pub trait BaseContainerElementType {
     fn push_element(&self, tgph: &mut TGPH, name: &str);
 }
 
