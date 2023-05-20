@@ -101,11 +101,11 @@ class LineGraph {
   }
 
   toScreenSpaceHeight(val) {
-    return (
-      this.paddingSpace +
+    let result =
       this.paddedHeight *
-        ((val - this.valueMin) / (this.valueMax - this.valueMin))
-    );
+      ((val - this.valueMin) / (this.valueMax - this.valueMin));
+    let inverted = this.paddedHeight - result;
+    return inverted + this.paddingSpace;
   }
 
   draw(values) {
