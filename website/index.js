@@ -1,107 +1,14 @@
 const svg = document.getElementById("main");
 
 const scale = 8;
-let points = [
-  [scale * 0, 347],
-  [scale * 1, 350],
-  [scale * 2, 289],
-  [scale * 3, 252],
-  [scale * 4, 329],
-  [scale * 5, 253],
-  [scale * 6, 277],
-  [scale * 7, 314],
-  [scale * 8, 279],
-  [scale * 9, 255],
-  [scale * 10, 278],
-  [scale * 11, 289],
-  [scale * 12, 261],
-  [scale * 13, 289],
-  [scale * 14, 336],
-  [scale * 15, 261],
-  [scale * 16, 315],
-  [scale * 17, 251],
-  [scale * 18, 283],
-  [scale * 19, 337],
-  [scale * 20, 260],
-  [scale * 21, 258],
-  [scale * 22, 296],
-  [scale * 23, 271],
-  [scale * 24, 294],
-  [scale * 25, 269],
-  [scale * 26, 261],
-  [scale * 27, 326],
-  [scale * 28, 323],
-  [scale * 29, 257],
-  [scale * 30, 257],
-  [scale * 31, 259],
-  [scale * 32, 296],
-  [scale * 33, 256],
-  [scale * 34, 324],
-  [scale * 35, 268],
-  [scale * 36, 321],
-  [scale * 37, 281],
-  [scale * 38, 342],
-  [scale * 39, 301],
-  [scale * 40, 253],
-  [scale * 41, 277],
-  [scale * 42, 284],
-  [scale * 43, 332],
-  [scale * 44, 333],
-  [scale * 45, 312],
-  [scale * 46, 252],
-  [scale * 47, 329],
-  [scale * 48, 315],
-  [scale * 49, 313],
-  [scale * 50, 340],
-  [scale * 51, 280],
-  [scale * 52, 275],
-  [scale * 53, 323],
-  [scale * 54, 286],
-  [scale * 55, 286],
-  [scale * 56, 325],
-  [scale * 57, 290],
-  [scale * 58, 313],
-  [scale * 59, 297],
-  [scale * 60, 340],
-  [scale * 61, 305],
-  [scale * 62, 342],
-  [scale * 63, 256],
-  [scale * 64, 310],
-  [scale * 65, 287],
-  [scale * 66, 300],
-  [scale * 67, 346],
-  [scale * 68, 314],
-  [scale * 69, 261],
-  [scale * 70, 251],
-  [scale * 71, 281],
-  [scale * 72, 279],
-  [scale * 73, 278],
-  [scale * 74, 261],
-  [scale * 75, 319],
-  [scale * 76, 313],
-  [scale * 77, 311],
-  [scale * 78, 331],
-  [scale * 79, 300],
-  [scale * 80, 250],
-  [scale * 81, 291],
-  [scale * 82, 266],
-  [scale * 83, 280],
-  [scale * 84, 307],
-  [scale * 85, 287],
-  [scale * 86, 273],
-  [scale * 87, 279],
-  [scale * 88, 345],
-  [scale * 89, 328],
-  [scale * 90, 302],
-  [scale * 91, 311],
-  [scale * 92, 338],
-  [scale * 93, 263],
-  [scale * 94, 288],
-  [scale * 95, 276],
-  [scale * 96, 265],
-  [scale * 97, 258],
-  [scale * 98, 338],
-  [scale * 99, 323],
+let values = [
+  347, 350, 289, 252, 329, 253, 277, 314, 279, 255, 278, 289, 261, 289, 336,
+  261, 315, 251, 283, 337, 260, 258, 296, 271, 294, 269, 261, 326, 323, 257,
+  257, 259, 296, 256, 324, 268, 321, 281, 342, 301, 253, 277, 284, 332, 333,
+  312, 252, 329, 315, 313, 340, 280, 275, 323, 286, 286, 325, 290, 313, 297,
+  340, 305, 342, 256, 310, 287, 300, 346, 314, 261, 251, 281, 279, 278, 261,
+  319, 313, 311, 331, 300, 250, 291, 266, 280, 307, 287, 273, 279, 345, 328,
+  302, 311, 338, 263, 288, 276, 265, 258, 338, 323,
 ];
 
 function lerp(k0, k1, t) {
@@ -130,6 +37,7 @@ function getInterpolatedY(x, points) {
 class LineGraph {
   constructor(svg) {
     this.svg = svg;
+
     this.hoverLine = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "line"
@@ -153,10 +61,10 @@ class LineGraph {
       this.hoverLine.setAttribute("y2", "600");
 
       this.hoverCircle.setAttribute("cx", `${e.offsetX}`);
-      this.hoverCircle.setAttribute(
-        "cy",
-        `${getInterpolatedY(e.offsetX, points)}`
-      );
+      // this.hoverCircle.setAttribute(
+      //   "cy",
+      //   `${getInterpolatedY(e.offsetX, this.values)}`
+      // );
     });
 
     svg.addEventListener("mouseenter", (_) => {
@@ -170,19 +78,44 @@ class LineGraph {
     });
   }
 
-  draw(points) {
-    const pointsAttribValue = points.map(([x, y]) => `${x}, ${y}`).join(" ");
+  draw(values) {
+    this.values = values;
+    const bbox = this.svg.getBoundingClientRect();
+    this.newWidth = bbox.width;
+    this.newHeight = bbox.height;
 
-    const polyline = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "polyline"
-    );
+    if (values.length === 0) {
+      return 0;
+    }
+
+    this.horizontalScaling = this.newWidth / values.length;
+    const pointsAttribValue = values
+      .map((val, i) => `${i * horizontalScaling}, ${val}`)
+      .join(" ");
+
+    let polyline = this.svg.getElementById("data");
+    if (polyline === null) {
+      polyline = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "polyline"
+      );
+      this.svg.appendChild(polyline);
+    }
+
     polyline.setAttribute("points", pointsAttribValue);
     polyline.setAttribute("stroke", "pink");
     polyline.setAttribute("fill", "none");
-    this.svg.appendChild(polyline);
+    // TODO(radomski): Generate unique ID
+    polyline.setAttribute("id", "data");
   }
 }
 
 const testGraph = new LineGraph(svg);
-testGraph.draw(points);
+
+window.onload = () => {
+  testGraph.draw(values);
+};
+
+window.addEventListener("resize", (_) => {
+  testGraph.draw(values);
+});
