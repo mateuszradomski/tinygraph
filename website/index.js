@@ -15,20 +15,6 @@ function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
 }
 
-function getInterpolatedY(x, values, horizontalScaling) {
-  const i = Math.floor(x / horizontalScaling) + 1;
-
-  if (i === 0) {
-    return values[0];
-  }
-
-  return lerp(
-    values[i - 1],
-    values[i],
-    (x - (i - 1) * horizontalScaling) / Math.abs(horizontalScaling)
-  );
-}
-
 class LineGraph {
   constructor(svg) {
     this.svg = svg;
@@ -43,8 +29,10 @@ class LineGraph {
     );
 
     this.hoverLine.setAttribute("stroke", "grey");
+    this.hoverLine.setAttribute("class", "hidden");
     this.hoverCircle.setAttribute("stroke", "grey");
     this.hoverCircle.setAttribute("r", "3");
+    this.hoverCircle.setAttribute("class", "hidden");
 
     this.svg.appendChild(this.hoverLine);
     this.svg.appendChild(this.hoverCircle);
@@ -58,7 +46,7 @@ class LineGraph {
       this.hoverCircle.setAttribute("cx", `${e.offsetX}`);
       this.hoverCircle.setAttribute(
         "cy",
-        `${getInterpolatedY(e.offsetX, this.values, this.horizontalScaling)}`
+        `${this.getInterpolatedY(e.offsetX)}`
       );
     });
 
@@ -73,19 +61,51 @@ class LineGraph {
     });
   }
 
+  getMinMax(values) {
+    let max = Number.MIN_VALUE;
+    let min = Number.MAX_VALUE;
+
+    for (const v of values) {
+      max = Math.max(max, v);
+      min = Math.min(min, v);
+    }
+
+    return [min, max];
+  }
+
+  toScreenSpaceHeight(val) {
+    return (
+      this.paddingSpace +
+      this.paddedHeight *
+        ((val - this.valueMin) / (this.valueMax - this.valueMin))
+    );
+  }
+
   draw(values) {
     this.values = values;
     const bbox = this.svg.getBoundingClientRect();
-    this.newWidth = bbox.width;
-    this.newHeight = bbox.height;
+    this.width = bbox.width;
+    this.height = bbox.height;
+    this.verticalPadding = 0.05; // 5%
+    this.paddingSpace = this.height * this.verticalPadding;
+    this.paddingRoom = this.paddingSpace * 2;
+    this.paddedHeight = this.height - this.paddingRoom;
 
     if (values.length === 0) {
       return 0;
     }
 
-    this.horizontalScaling = this.newWidth / values.length;
+    const [min, max] = this.getMinMax(values);
+    console.log(min, max);
+    this.valueMin = min;
+    this.valueMax = max;
+
+    this.horizontalScaling = this.width / values.length;
     const pointsAttribValue = values
-      .map((val, i) => `${i * this.horizontalScaling}, ${val}`)
+      .map(
+        (val, i) =>
+          `${i * this.horizontalScaling}, ${this.toScreenSpaceHeight(val)}`
+      )
       .join(" ");
 
     let polyline = this.svg.getElementById("data");
@@ -102,6 +122,20 @@ class LineGraph {
     polyline.setAttribute("fill", "none");
     // TODO(radomski): Generate unique ID
     polyline.setAttribute("id", "data");
+  }
+
+  getInterpolatedY(x) {
+    const i = Math.floor(x / this.horizontalScaling) + 1;
+
+    if (i === 0) {
+      return this.toScreenSpaceHeight(values[0]);
+    }
+
+    return lerp(
+      this.toScreenSpaceHeight(values[i - 1]),
+      this.toScreenSpaceHeight(values[i]),
+      (x - (i - 1) * this.horizontalScaling) / Math.abs(this.horizontalScaling)
+    );
   }
 }
 
