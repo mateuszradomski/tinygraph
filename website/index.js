@@ -30,7 +30,7 @@ class LineGraph {
     });
 
     this.rulerCaptions.forEach((cap) => {
-      cap.setAttribute("style", "font: bold 1em serif;");
+      cap.setAttribute("style", "font: 1em serif;");
       this.svg.appendChild(cap);
     });
 
