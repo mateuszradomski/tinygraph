@@ -1,15 +1,8 @@
 const svg = document.getElementById("main");
 
 const scale = 8;
-let values = [
-  347, 350, 289, 252, 329, 253, 277, 314, 279, 255, 278, 289, 261, 289, 336,
-  261, 315, 251, 283, 337, 260, 258, 296, 271, 294, 269, 261, 326, 323, 257,
-  257, 259, 296, 256, 324, 268, 321, 281, 342, 301, 253, 277, 284, 332, 333,
-  312, 252, 329, 315, 313, 340, 280, 275, 323, 286, 286, 325, 290, 313, 297,
-  340, 305, 342, 256, 310, 287, 300, 346, 314, 261, 251, 281, 279, 278, 261,
-  319, 313, 311, 331, 300, 250, 291, 266, 280, 307, 287, 273, 279, 345, 328,
-  302, 311, 338, 263, 288, 276, 265, 258, 338, 323,
-];
+let values = new Array(1000).fill(0)
+values = values.map((_, i) => Math.sin(i / 50))
 
 function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
@@ -110,7 +103,7 @@ class LineGraph {
     this.valueMin = min;
     this.valueMax = max;
 
-    this.horizontalScaling = this.width / values.length;
+    this.horizontalScaling = this.width / (values.length - 1);
     const pointsAttribValue = values
       .map(
         (val, i) =>
