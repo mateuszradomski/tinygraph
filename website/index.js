@@ -19,6 +19,14 @@ class LineGraph {
   constructor(svg) {
     this.svg = svg;
 
+    let polyline = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "polyline"
+    );
+    // TODO(radomski): Generate unique ID
+    polyline.setAttribute("id", "data");
+    this.svg.appendChild(polyline);
+
     this.hoverLine = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "line"
@@ -28,9 +36,11 @@ class LineGraph {
       "circle"
     );
 
-    this.hoverLine.setAttribute("stroke", "grey");
+    this.hoverLine.setAttribute("stroke", "white");
+    this.hoverLine.setAttribute("stroke-width", "2px");
     this.hoverLine.setAttribute("class", "hidden");
-    this.hoverCircle.setAttribute("stroke", "grey");
+    this.hoverCircle.setAttribute("stroke", "white");
+    this.hoverCircle.setAttribute("stroke-width", "2px");
     this.hoverCircle.setAttribute("r", "3");
     this.hoverCircle.setAttribute("class", "hidden");
 
@@ -109,19 +119,10 @@ class LineGraph {
       .join(" ");
 
     let polyline = this.svg.getElementById("data");
-    if (polyline === null) {
-      polyline = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "polyline"
-      );
-      this.svg.appendChild(polyline);
-    }
 
     polyline.setAttribute("points", pointsAttribValue);
     polyline.setAttribute("stroke", "pink");
     polyline.setAttribute("fill", "none");
-    // TODO(radomski): Generate unique ID
-    polyline.setAttribute("id", "data");
   }
 
   getInterpolatedY(x) {
