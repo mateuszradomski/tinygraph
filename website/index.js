@@ -1,8 +1,9 @@
 const svg = document.getElementById("main");
 
 const scale = 8;
-let values = new Array(1000).fill(0)
-values = values.map((_, i) => Math.sin(i / 50))
+let values = new Array(1000).fill(0);
+values = values.map((_, i) => (i/50));
+console.log(values)
 
 function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
@@ -11,6 +12,29 @@ function lerp(k0, k1, t) {
 class LineGraph {
   constructor(svg) {
     this.svg = svg;
+
+    this.rulers = [];
+    this.rulerCaptions = [];
+    for (let i = 0; i < 5; i++) {
+      this.rulers.push(
+        document.createElementNS("http://www.w3.org/2000/svg", "line")
+      );
+      this.rulerCaptions.push(
+        document.createElementNS("http://www.w3.org/2000/svg", "text")
+      );
+      console.log(this.rulerCaptions);
+    }
+
+    this.rulers.forEach((r) => {
+      r.setAttribute("stroke", "grey");
+      r.setAttribute("stroke-opacity", "0.25");
+      this.svg.appendChild(r);
+    });
+
+    this.rulerCaptions.forEach((cap) => {
+      cap.setAttribute("style", "font: bold 1em serif;");
+      this.svg.appendChild(cap);
+    });
 
     let polyline = document.createElementNS(
       "http://www.w3.org/2000/svg",
@@ -99,7 +123,6 @@ class LineGraph {
     }
 
     const [min, max] = this.getMinMax(values);
-    console.log(min, max);
     this.valueMin = min;
     this.valueMax = max;
 
@@ -115,7 +138,34 @@ class LineGraph {
 
     polyline.setAttribute("points", pointsAttribValue);
     polyline.setAttribute("stroke", "pink");
+    polyline.setAttribute("stroke-width", "2px");
     polyline.setAttribute("fill", "none");
+
+    //
+    // Rulers and their captions
+    //
+    this.rulers.forEach((r, i) => {
+      const denom = this.rulers.length - 1;
+      const y = i * (this.paddedHeight / denom) + this.paddingSpace;
+      r.setAttribute("x1", "0");
+      r.setAttribute("y1", `${y}`);
+      r.setAttribute("x2", `${this.width}`);
+      r.setAttribute("y2", `${y}`);
+    });
+
+    this.rulerCaptions.forEach((cap, i) => {
+      const denom1 = this.rulerCaptions.length - 1;
+      const denom2 =
+        (this.valueMax - this.valueMin) / (this.rulerCaptions.length - 1);
+      const y =
+        (this.rulerCaptions.length - i - 1) * (this.paddedHeight / denom1) +
+        this.paddingSpace;
+
+      const rulerValue = i * denom2 + this.valueMin;
+      cap.textContent = `${rulerValue.toFixed(2)}`;
+      cap.setAttribute("x", "0");
+      cap.setAttribute("y", `${y - 2}`);
+    });
   }
 
   getInterpolatedY(x) {
