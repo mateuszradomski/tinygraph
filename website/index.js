@@ -2,8 +2,7 @@ const svg = document.getElementById("main");
 
 const scale = 8;
 let values = new Array(1000).fill(0);
-values = values.map((_, i) => i / 50);
-console.log(values);
+values = values.map((_, i) => Math.sin(i / 35));
 
 function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
@@ -22,7 +21,6 @@ class LineGraph {
       this.rulerCaptions.push(
         document.createElementNS("http://www.w3.org/2000/svg", "text")
       );
-      console.log(this.rulerCaptions);
     }
 
     this.rulers.forEach((r) => {
