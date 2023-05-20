@@ -15,22 +15,17 @@ function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
 }
 
-function getInterpolatedY(x, points) {
-  let i = 0;
-  for (i = 0; i < points.length; i++) {
-    if (points[i][0] > x) {
-      break;
-    }
-  }
+function getInterpolatedY(x, values, horizontalScaling) {
+  const i = Math.floor(x / horizontalScaling) + 1;
 
   if (i === 0) {
-    return points[0][1];
+    return values[0];
   }
 
   return lerp(
-    points[i - 1][1],
-    points[i][1],
-    (x - points[i - 1][0]) / Math.abs(points[i][0] - points[i - 1][0])
+    values[i - 1],
+    values[i],
+    (x - (i - 1) * horizontalScaling) / Math.abs(horizontalScaling)
   );
 }
 
@@ -61,10 +56,10 @@ class LineGraph {
       this.hoverLine.setAttribute("y2", "600");
 
       this.hoverCircle.setAttribute("cx", `${e.offsetX}`);
-      // this.hoverCircle.setAttribute(
-      //   "cy",
-      //   `${getInterpolatedY(e.offsetX, this.values)}`
-      // );
+      this.hoverCircle.setAttribute(
+        "cy",
+        `${getInterpolatedY(e.offsetX, this.values, this.horizontalScaling)}`
+      );
     });
 
     svg.addEventListener("mouseenter", (_) => {
@@ -90,7 +85,7 @@ class LineGraph {
 
     this.horizontalScaling = this.newWidth / values.length;
     const pointsAttribValue = values
-      .map((val, i) => `${i * horizontalScaling}, ${val}`)
+      .map((val, i) => `${i * this.horizontalScaling}, ${val}`)
       .join(" ");
 
     let polyline = this.svg.getElementById("data");
