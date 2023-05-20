@@ -2,8 +2,8 @@ const svg = document.getElementById("main");
 
 const scale = 8;
 let values = new Array(1000).fill(0);
-values = values.map((_, i) => (i/50));
-console.log(values)
+values = values.map((_, i) => i / 50);
+console.log(values);
 
 function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
