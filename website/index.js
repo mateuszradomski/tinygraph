@@ -1,11 +1,17 @@
 const svg = document.getElementById("main");
 
-const scale = 8;
+const SVG_HTML_NAMESPACE = "http://www.w3.org/2000/svg";
 let values = new Array(1000).fill(0);
 values = values.map((_, i) => Math.sin(i / 35));
 
 function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
+}
+
+function setAttributes(elem, attrs) {
+  for (const key in attrs) {
+    elem.setAttribute(key, attrs[key]);
+  }
 }
 
 class LineGraph {
@@ -15,11 +21,9 @@ class LineGraph {
     this.rulers = [];
     this.rulerCaptions = [];
     for (let i = 0; i < 5; i++) {
-      this.rulers.push(
-        document.createElementNS("http://www.w3.org/2000/svg", "line")
-      );
+      this.rulers.push(document.createElementNS(SVG_HTML_NAMESPACE, "line"));
       this.rulerCaptions.push(
-        document.createElementNS("http://www.w3.org/2000/svg", "text")
+        document.createElementNS(SVG_HTML_NAMESPACE, "text")
       );
     }
 
@@ -34,45 +38,45 @@ class LineGraph {
       this.svg.appendChild(cap);
     });
 
-    let polyline = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "polyline"
-    );
-    // TODO(radomski): Generate unique ID
-    polyline.setAttribute("id", "data");
-    this.svg.appendChild(polyline);
+    this.polyline = document.createElementNS(SVG_HTML_NAMESPACE, "polyline");
 
-    this.hoverLine = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "line"
-    );
-    this.hoverCircle = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "circle"
-    );
+    setAttributes(this.polyline, {
+      id: "data",
+      stroke: "pink",
+      "stroke-width": "2px",
+      fill: "none",
+    });
+    this.svg.appendChild(this.polyline);
 
-    this.hoverLine.setAttribute("stroke", "white");
-    this.hoverLine.setAttribute("stroke-width", "2px");
-    this.hoverLine.setAttribute("class", "hidden");
-    this.hoverCircle.setAttribute("stroke", "white");
-    this.hoverCircle.setAttribute("stroke-width", "2px");
-    this.hoverCircle.setAttribute("r", "3");
-    this.hoverCircle.setAttribute("class", "hidden");
+    this.hoverLine = document.createElementNS(SVG_HTML_NAMESPACE, "line");
+    this.hoverCircle = document.createElementNS(SVG_HTML_NAMESPACE, "circle");
+
+    setAttributes(this.hoverLine, {
+      stroke: "white",
+      class: "hidden",
+      "stroke-width": "2px",
+    });
+    setAttributes(this.hoverCircle, {
+      stroke: "white",
+      class: "hidden",
+      "stroke-width": "2px",
+      r: "3",
+    });
 
     this.svg.appendChild(this.hoverLine);
     this.svg.appendChild(this.hoverCircle);
 
     svg.addEventListener("mousemove", (e) => {
-      this.hoverLine.setAttribute("x1", `${e.offsetX}`);
-      this.hoverLine.setAttribute("y1", "0");
-      this.hoverLine.setAttribute("x2", `${e.offsetX}`);
-      this.hoverLine.setAttribute("y2", "600");
-
-      this.hoverCircle.setAttribute("cx", `${e.offsetX}`);
-      this.hoverCircle.setAttribute(
-        "cy",
-        `${this.getInterpolatedY(e.offsetX)}`
-      );
+      setAttributes(this.hoverLine, {
+        x1: `${e.offsetX}`,
+        y1: "0",
+        x2: `${e.offsetX}`,
+        y2: "600",
+      });
+      setAttributes(this.hoverCircle, {
+        cx: `${e.offsetX}`,
+        cy: `${this.getInterpolatedY(e.offsetX)}`,
+      });
     });
 
     svg.addEventListener("mouseenter", (_) => {
@@ -132,12 +136,7 @@ class LineGraph {
       )
       .join(" ");
 
-    let polyline = this.svg.getElementById("data");
-
-    polyline.setAttribute("points", pointsAttribValue);
-    polyline.setAttribute("stroke", "pink");
-    polyline.setAttribute("stroke-width", "2px");
-    polyline.setAttribute("fill", "none");
+    this.polyline.setAttribute("points", pointsAttribValue);
 
     //
     // Rulers and their captions
@@ -145,10 +144,12 @@ class LineGraph {
     this.rulers.forEach((r, i) => {
       const denom = this.rulers.length - 1;
       const y = i * (this.paddedHeight / denom) + this.paddingSpace;
-      r.setAttribute("x1", "0");
-      r.setAttribute("y1", `${y}`);
-      r.setAttribute("x2", `${this.width}`);
-      r.setAttribute("y2", `${y}`);
+      setAttributes(r, {
+        x1: "0",
+        y1: `${y}`,
+        x2: `${this.width}`,
+        y2: `${y}`,
+      });
     });
 
     this.rulerCaptions.forEach((cap, i) => {
