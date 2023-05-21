@@ -16,73 +16,89 @@ function setAttributes(elem, attrs) {
 
 // TODO(radomski): Error reporting...
 async function parseTGPH() {
-  const readString = (bytes, dataView, offset) => {
-    let length = dataView.getUint8(offset, true);
-    offset += 1;
-    if (length === 0xff) {
-      length = dataView.getUint16(offset, true);
-      offset += 2;
-    }
-
-    const stringBytes = new Uint8Array(bytes, offset, length);
-    const decoder = new TextDecoder("utf-8");
-    const string = decoder.decode(stringBytes);
-    offset += length;
-    return {
-      string: string,
-      newOffset: offset,
-    };
-  };
+  const readString = (bytes, dataView, offset) => {};
 
   const response = await fetch("data.tgph");
   const content = await response.blob();
   const bytes = await content.arrayBuffer();
   const dataView = new DataView(bytes);
 
-  let offset = 0;
+  const parser = {
+    bytes: bytes,
+    dataView: dataView,
+    offset: 0,
 
-  const magic = dataView.getUint32(offset, true);
-  offset += 4;
+    readF32() {
+      const res = this.dataView.getFloat32(this.offset, true);
+      this.offset += 4;
+      return res;
+    },
+
+    readU32() {
+      const res = this.dataView.getUint32(this.offset, true);
+      this.offset += 4;
+      return res;
+    },
+
+    readU16() {
+      const res = this.dataView.getUint16(this.offset, true);
+      this.offset += 2;
+      return res;
+    },
+
+    readU8() {
+      const res = this.dataView.getUint8(this.offset, true);
+      this.offset += 1;
+      return res;
+    },
+
+    readString() {
+      let length = this.readU8();
+      if (length === 0xff) {
+        length = this.readU16();
+      }
+
+      const stringBytes = new Uint8Array(this.bytes, this.offset, length);
+      const decoder = new TextDecoder("utf-8");
+      const string = decoder.decode(stringBytes);
+      this.offset += length;
+      return string;
+    },
+  };
+
+  const magic = parser.readU32();
+  const version = parser.readU8();
+  const containerCount = parser.readU16();
+
   console.assert(0x48504754 === magic);
-
-  const version = dataView.getUint8(offset, true);
-  offset += 1;
   console.assert(1 === version);
 
-  const containerCount = dataView.getUint16(offset, true);
-  offset += 2;
-
   let containers = [];
-
-  for (let k = 0; k < containerCount; k++) {
-    const res = readString(bytes, dataView, offset);
-    let name = res.string;
-    offset = res.newOffset;
-
-    const elementType = dataView.getUint8(offset, true);
-    offset += 1;
-    const elementCount = dataView.getUint32(offset, true);
-    offset += 4;
+  for (let i = 0; i < containerCount; i++) {
+    let name = parser.readString();
+    const elementType = parser.readU8();
+    const elementCount = parser.readU32();
 
     const elements = [];
-    if (elementType === 1) {
-      for (let i = 0; i < elementCount; i++) {
-        elements.push(dataView.getUint32(offset, true));
-        offset += 4;
-      }
-    } else if (elementType === 2) {
-      for (let i = 0; i < elementCount; i++) {
-        elements.push(dataView.getFloat32(offset, true));
-        offset += 4;
-      }
-    } else if (elementType === 3) {
-      for (let i = 0; i < elementCount; i++) {
-        const res = readString(bytes, dataView, offset);
-        elements.push(res.string);
-        offset = res.newOffset;
-      }
-    } else {
-      console.assert(false);
+    switch (elementType) {
+      case 1:
+        for (let j = 0; j < elementCount; j++) {
+          elements.push(parser.readU32());
+        }
+        break;
+      case 2:
+        for (let j = 0; j < elementCount; j++) {
+          elements.push(parser.readF32());
+        }
+        break;
+      case 3:
+        for (let j = 0; j < elementCount; j++) {
+          elements.push(parser.readString());
+        }
+        break;
+      default:
+        console.assert(false);
+        break;
     }
 
     containers.push({
