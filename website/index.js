@@ -1,8 +1,6 @@
 const svg = document.getElementById("main");
 
 const SVG_HTML_NAMESPACE = "http://www.w3.org/2000/svg";
-let values = new Array(1000).fill(0);
-values = values.map((_, i) => Math.sin(i / 35));
 
 function lerp(k0, k1, t) {
   return k0 + t * (k1 - k0);
@@ -14,13 +12,35 @@ function setAttributes(elem, attrs) {
   }
 }
 
-// TODO(radomski): Error reporting...
-async function parseTGPH() {
-  const readString = (bytes, dataView, offset) => {};
+async function decompressToByteArray(compressedData) {
+  const ds = new DecompressionStream("gzip");
+  const stream = compressedData.stream().pipeThrough(ds);
+  const reader = stream.getReader();
+  const chunks = [];
 
-  const response = await fetch("data.tgph");
-  const content = await response.blob();
-  const bytes = await content.arrayBuffer();
+  let totalSize = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    totalSize += value.length;
+  }
+
+  const concatenatedChunks = new Uint8Array(totalSize);
+  let offset = 0;
+  for (const chunk of chunks) {
+    concatenatedChunks.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return concatenatedChunks;
+}
+
+async function fetchAndParseTGPH() {
+  const response = await fetch("data.tgph.gz");
+  const blob = await decompressToByteArray(await response.blob());
+  const bytes = blob.buffer;
   const dataView = new DataView(bytes);
 
   const parser = {
@@ -70,8 +90,12 @@ async function parseTGPH() {
   const version = parser.readU8();
   const containerCount = parser.readU16();
 
-  console.assert(0x48504754 === magic);
-  console.assert(1 === version);
+  if (magic !== 0x48504754) {
+    throw new Error("Invalid magic at the start of fetched file");
+  }
+  if (version !== 1) {
+    throw new Error("Unexpected version in the fetched TGPH file");
+  }
 
   let containers = [];
   for (let i = 0; i < containerCount; i++) {
@@ -97,8 +121,7 @@ async function parseTGPH() {
         }
         break;
       default:
-        console.assert(false);
-        break;
+        throw new Error(`Unexpected elementType = ${elementType}`);
     }
 
     containers.push({
@@ -268,24 +291,41 @@ class LineGraph {
     const i = Math.floor(x / this.horizontalScaling) + 1;
 
     if (i === 0) {
-      return this.toScreenSpaceHeight(values[0]);
+      return this.toScreenSpaceHeight(this.values[0]);
     }
 
     return lerp(
-      this.toScreenSpaceHeight(values[i - 1]),
-      this.toScreenSpaceHeight(values[i]),
+      this.toScreenSpaceHeight(this.values[i - 1]),
+      this.toScreenSpaceHeight(this.values[i]),
       (x - (i - 1) * this.horizontalScaling) / Math.abs(this.horizontalScaling)
     );
   }
 }
 
 const testGraph = new LineGraph(svg);
+let containers = undefined;
 
 window.onload = async () => {
-  containers = await parseTGPH();
-  testGraph.draw(values);
+  containers = await fetchAndParseTGPH();
+
+  console.log(containers);
+  for (const container of containers) {
+    if (container.name === "used_memory_kb") {
+      container.elements = container.elements.map((e) => e / 1024);
+      testGraph.draw(container.elements);
+    }
+  }
 };
 
 window.addEventListener("resize", (_) => {
-  testGraph.draw(values);
+  if (containers === undefined) {
+    return;
+  }
+
+  for (const container of containers) {
+    if (container.name === "used_memory_kb") {
+      container.elements = container.elements.map((e) => e / 1024);
+      testGraph.draw(containers.elements);
+    }
+  }
 });
