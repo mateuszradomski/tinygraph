@@ -7,11 +7,6 @@ use std::io::{stdout, Write};
 mod tgph_format;
 use tgph_format::TGPH;
 
-// TODO(radomski):
-// gzip - https://github.com/adamkewley/libdeflater
-// clap - https://lib.rs/crates/clap
-// read existing file from filesystem, get limit
-
 fn main() {
     let mut points_saved = 0;
     let mut sys = System::new_all();

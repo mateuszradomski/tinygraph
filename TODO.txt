@@ -1,0 +1,11 @@
+- Assign titles to graphs.
+- Improve writing to TGPH by separating containers for different CPU cores, network interfaces, etc.
+- Finalize CSS styling.
+- Include a box that displays information about the point at which the mouse is hovering on the graph.
+- Ensure the X-axis represents time.
+- Begin logging time.
+
+// From main.rs
+- gzip - https://github.com/adamkewley/libdeflater
+- clap - https://lib.rs/crates/clap
+- read existing file from filesystem, get limit
