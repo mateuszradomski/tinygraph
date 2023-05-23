@@ -310,8 +310,7 @@ window.onload = async () => {
 
   console.log(containers);
   for (const container of containers) {
-    if (container.name === "used_memory_kb") {
-      container.elements = container.elements.map((e) => e / 1024);
+    if (container.name === "Used memory [MB]") {
       testGraph.draw(container.elements);
     }
   }
@@ -323,8 +322,7 @@ window.addEventListener("resize", (_) => {
   }
 
   for (const container of containers) {
-    if (container.name === "used_memory_kb") {
-      container.elements = container.elements.map((e) => e / 1024);
+    if (container.name === "Used memory [MB]") {
       testGraph.draw(containers.elements);
     }
   }

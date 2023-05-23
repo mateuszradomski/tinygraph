@@ -1,4 +1,4 @@
-use std::thread::sleep;
+use std::{thread::sleep, time::{SystemTime, UNIX_EPOCH}};
 
 use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt};
 
@@ -16,53 +16,61 @@ fn main() {
     loop {
         sys.refresh_all();
 
+        tgph.append(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32, "Unix timestamp");
+
         for disk in sys.disks() {
             tgph.append(
-                (disk.total_space() / 1024 / 1024) as u32,
-                "disk_total_space",
+                (disk.total_space() / 1024 / 1024 / 1024) as u32,
+                &format!("Disk {} Total Space [GB]", disk.name().to_str().unwrap()),
             );
             tgph.append(
-                (disk.available_space() / 1024 / 1024) as u32,
-                "disk_available_space",
+                (disk.available_space() / 1024 / 1024 / 1024) as u32,
+                &format!("Disk {} Avaiable Space [GB]", disk.name().to_str().unwrap()),
             );
-            tgph.append(disk.name().to_str().unwrap().to_string(), "disk_name");
         }
 
         for (interface_name, data) in sys.networks() {
-            tgph.append(interface_name.to_string(), "iface_name");
-            tgph.append(data.received() as u32, "iface_received");
-            tgph.append(data.transmitted() as u32, "iface_transmitted");
+            tgph.append(
+                data.received() as u32,
+                &format!("Interface {} Received [bytes]", interface_name),
+            );
+            tgph.append(
+                data.transmitted() as u32,
+                &format!("Interface {} Transmitted [bytes]", interface_name),
+            );
         }
 
         for component in sys.components() {
-            tgph.append(component.label().to_string(), "thermal_component_name");
-            tgph.append(component.temperature(), "thermal_component_temp");
+            tgph.append(component.temperature(), &format!("{} Temperature [C]", component.label()));
         }
 
-        tgph.append(sys.cpus().len() as u32, "cpu_count");
+        tgph.append(sys.cpus().len() as u32, "CPU Count");
 
-        tgph.append((sys.total_memory() / 1024) as u32, "total_memory_kb");
-        tgph.append((sys.used_memory() / 1024) as u32, "used_memory_kb");
-        tgph.append((sys.total_swap() / 1024) as u32, "total_swap_kb");
-        tgph.append((sys.used_swap() / 1024) as u32, "used_swap_kb");
+        tgph.append(
+            (sys.total_memory() / 1024 / 1024) as u32,
+            "Total memory [MB]",
+        );
+        tgph.append((sys.used_memory() / 1024 / 1024) as u32, "Used memory [MB]");
+        tgph.append((sys.total_swap() / 1024 / 1024) as u32, "Total swap [MB]");
+        tgph.append((sys.used_swap() / 1024 / 1024) as u32, "Used swap [MB]");
 
         tgph.append(
             sys.kernel_version()
                 .unwrap_or("UNDEFINED".to_string())
                 .to_string(),
-            "kernel_version",
+            "Kernel Version",
         );
         tgph.append(
             sys.os_version()
                 .unwrap_or("UNDEFINED".to_string())
                 .to_string(),
-            "os_version",
+            "OS Version",
         );
         tgph.append(
             sys.host_name()
                 .unwrap_or("UNDEFINED".to_string())
                 .to_string(),
-            "host_name",
+            "Hostname",
         );
 
         let mut output_file = std::fs::File::create("data.tgph").unwrap();

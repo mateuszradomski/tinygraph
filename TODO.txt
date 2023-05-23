@@ -1,9 +1,8 @@
 - Assign titles to graphs.
-- Improve writing to TGPH by separating containers for different CPU cores, network interfaces, etc.
 - Finalize CSS styling.
 - Include a box that displays information about the point at which the mouse is hovering on the graph.
 - Ensure the X-axis represents time.
-- Begin logging time.
+- On hover snap to closest actual value
 
 // From main.rs
 - gzip - https://github.com/adamkewley/libdeflater
