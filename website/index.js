@@ -162,6 +162,7 @@ class LineGraph {
     this.rulers.forEach((r) => {
       r.setAttribute("stroke", "grey");
       r.setAttribute("stroke-opacity", "0.25");
+      r.setAttribute("stroke-dasharray", "5,5");
       this.svg.appendChild(r);
     });
 
