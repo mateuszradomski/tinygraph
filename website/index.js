@@ -145,9 +145,10 @@ async function fetchAndParseTGPH() {
 }
 
 class LineGraph {
-  constructor(svg, values) {
+  constructor(svg, values, name) {
     this.svg = svg;
     this.values = values;
+    this.name = name;
 
     this.rulers = [];
     this.rulerCaptions = [];
@@ -173,7 +174,7 @@ class LineGraph {
 
     setAttributes(this.polyline, {
       id: "data",
-      stroke: `hsl(${Math.random() * 360.0}, 100%, 65%)`,
+      stroke: `${this.generateColorForLine()}`,
       "stroke-width": "2px",
       fill: "none",
     });
@@ -219,6 +220,16 @@ class LineGraph {
       this.hoverLine.setAttribute("class", "hidden");
       this.hoverCircle.setAttribute("class", "hidden");
     });
+  }
+
+  // TODO(radomski): Multilines, add nonce
+  generateColorForLine() {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(this.name);
+    // TODO(radomski): This really should be awaited
+    crypto.subtle.digest("SHA-256", data);
+    const random = data[0] | (data[1] << 8) | (data[2] << 16);
+    return `hsl(${random % 360.0}, 100%, 65%)`;
   }
 
   getMinMax(values) {
@@ -317,7 +328,7 @@ const insertDiv = document.getElementById("global_insert_space");
 function createLineGraphForContainer(container, halfSize) {
   const svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
   wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, svg);
-  const graph = new LineGraph(svg, container.elements);
+  const graph = new LineGraph(svg, container.elements, container.name);
   return graph;
 }
 
