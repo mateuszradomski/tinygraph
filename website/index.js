@@ -173,7 +173,7 @@ class LineGraph {
 
     setAttributes(this.polyline, {
       id: "data",
-      stroke: "pink",
+      stroke: `hsl(${Math.random() * 360.0}, 100%, 65%)`,
       "stroke-width": "2px",
       fill: "none",
     });
