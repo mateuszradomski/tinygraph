@@ -330,12 +330,6 @@ window.onload = async () => {
   console.log(containers);
   graphs.push(
     createLineGraphForContainer(
-      containers.filter((c) => c.name === "Unix timestamp")[0],
-      false
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
       containers.filter(
         (c) => c.name === "Interface enp1s0 Received [bytes]"
       )[0],
@@ -348,6 +342,12 @@ window.onload = async () => {
         (c) => c.name === "Interface enp1s0 Transmitted [bytes]"
       )[0],
       true
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name === "Unix timestamp")[0],
+      false
     )
   );
   graphs.push(

@@ -16,13 +16,11 @@
       .graph {
         width: 1000px;
         height: 260px;
-        border: dotted green;
       }
 
       .half_graph {
         width: 500px;
         height: 260px;
-        border: dotted purple;
       }
 
       svg {
@@ -31,12 +29,25 @@
       }
 
       .container {
+        width: 80%;
+        max-width: 1100px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        border: solid orange;
+        gap: 1em;
+      }
+
+      .centering {
         display: flex;
         justify-content: center;
+        align-items: center;
       }
     </style>
     <h1 style="border: solid red">graphs!</h1>
-    <div id="global_insert_space" class="container"></div>
+    <div class="centering">
+      <div id="global_insert_space" class="container"></div>
+    </div>
     <script src="index.js"></script>
   </body>
 </html>
