@@ -200,14 +200,14 @@ class LineGraph {
 
     svg.addEventListener("mousemove", (e) => {
       setAttributes(this.hoverLine, {
-        x1: `${e.offsetX}`,
+        x1: `${this.getClosestPointScreenSpaceX(e.offsetX)}`,
         y1: "0",
-        x2: `${e.offsetX}`,
+        x2: `${this.getClosestPointScreenSpaceX(e.offsetX)}`,
         y2: "600",
       });
       setAttributes(this.hoverCircle, {
-        cx: `${e.offsetX}`,
-        cy: `${this.getInterpolatedY(e.offsetX)}`,
+        cx: `${this.getClosestPointScreenSpaceX(e.offsetX)}`,
+        cy: `${this.getClosestPointScreenSpaceY(e.offsetX)}`,
       });
     });
 
@@ -308,18 +308,25 @@ class LineGraph {
     });
   }
 
-  getInterpolatedY(x) {
-    const i = Math.floor(x / this.horizontalScaling) + 1;
+  getClosestPointIndex(x) {
+    const i = Math.floor(x / this.horizontalScaling);
 
-    if (i === 0) {
-      return this.toScreenSpaceHeight(this.values[0]);
+    if (i >= this.values.length) {
+      return this.values.length - 1;
     }
 
-    return lerp(
-      this.toScreenSpaceHeight(this.values[i - 1]),
-      this.toScreenSpaceHeight(this.values[i]),
-      (x - (i - 1) * this.horizontalScaling) / Math.abs(this.horizontalScaling)
+    const dist = [i, i + 1].map((v) =>
+      Math.abs(x - v * this.horizontalScaling)
     );
+    return dist[0] < dist[1] ? i : i + 1;
+  }
+
+  getClosestPointScreenSpaceX(x) {
+    return this.getClosestPointIndex(x) * this.horizontalScaling;
+  }
+
+  getClosestPointScreenSpaceY(x) {
+    return this.toScreenSpaceHeight(this.values[this.getClosestPointIndex(x)]);
   }
 }
 
