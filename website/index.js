@@ -314,35 +314,55 @@ class LineGraph {
 
 const insertDiv = document.getElementById("global_insert_space");
 
-function createLineGraphForContainer(container) {
+function createLineGraphForContainer(container, halfSize) {
   const svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
-  wrapSvgAndAppendToGlobalContainer(insertDiv, false, svg);
+  wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, svg);
   const graph = new LineGraph(svg, container.elements);
   return graph;
 }
 
 let containers = undefined;
-let graph = undefined;
+let graphs = [];
 
 window.onload = async () => {
   containers = await fetchAndParseTGPH();
 
   console.log(containers);
-  let container = undefined;
-  for (const c of containers) {
-    if (c.name === "Used memory [MB]") {
-      container = c;
-    }
-  }
-
-  graph = createLineGraphForContainer(container);
-  graph.draw();
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name === "Unix timestamp")[0],
+      false
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter(
+        (c) => c.name === "Interface enp1s0 Received [bytes]"
+      )[0],
+      true
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter(
+        (c) => c.name === "Interface enp1s0 Transmitted [bytes]"
+      )[0],
+      true
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name === "Used memory [MB]")[0],
+      false
+    )
+  );
+  graphs.forEach((g) => g.draw());
 };
 
 window.addEventListener("resize", (_) => {
-  if (graph === undefined) {
+  if (graphs === undefined) {
     return;
   }
 
-  graph.draw();
+  graphs.forEach((g) => g.draw());
 });
