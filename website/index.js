@@ -1,5 +1,3 @@
-const svg = document.getElementById("main");
-
 const SVG_HTML_NAMESPACE = "http://www.w3.org/2000/svg";
 
 function lerp(k0, k1, t) {
@@ -10,6 +8,18 @@ function setAttributes(elem, attrs) {
   for (const key in attrs) {
     elem.setAttribute(key, attrs[key]);
   }
+}
+
+function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
+  const div = document.createElement("div");
+  if (isHalfSize) {
+    div.setAttribute("class", "half_graph");
+  } else {
+    div.setAttribute("class", "graph");
+  }
+
+  div.appendChild(svg);
+  insertDiv.appendChild(div);
 }
 
 async function decompressToByteArray(compressedData) {
@@ -135,8 +145,9 @@ async function fetchAndParseTGPH() {
 }
 
 class LineGraph {
-  constructor(svg) {
+  constructor(svg, values) {
     this.svg = svg;
+    this.values = values;
 
     this.rulers = [];
     this.rulerCaptions = [];
@@ -230,8 +241,7 @@ class LineGraph {
     return inverted + this.paddingSpace;
   }
 
-  draw(values) {
-    this.values = values;
+  draw() {
     const bbox = this.svg.getBoundingClientRect();
     this.width = bbox.width;
     this.height = bbox.height;
@@ -240,16 +250,16 @@ class LineGraph {
     this.paddingRoom = this.paddingSpace * 2;
     this.paddedHeight = this.height - this.paddingRoom;
 
-    if (values.length === 0) {
+    if (this.values.length === 0) {
       return 0;
     }
 
-    const [min, max] = this.getMinMax(values);
+    const [min, max] = this.getMinMax(this.values);
     this.valueMin = min;
     this.valueMax = max;
 
-    this.horizontalScaling = this.width / (values.length - 1);
-    const pointsAttribValue = values
+    this.horizontalScaling = this.width / (this.values.length - 1);
+    const pointsAttribValue = this.values
       .map(
         (val, i) =>
           `${i * this.horizontalScaling}, ${this.toScreenSpaceHeight(val)}`
@@ -302,28 +312,37 @@ class LineGraph {
   }
 }
 
-const testGraph = new LineGraph(svg);
+const insertDiv = document.getElementById("global_insert_space");
+
+function createLineGraphForContainer(container) {
+  const svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
+  wrapSvgAndAppendToGlobalContainer(insertDiv, false, svg);
+  const graph = new LineGraph(svg, container.elements);
+  return graph;
+}
+
 let containers = undefined;
+let graph = undefined;
 
 window.onload = async () => {
   containers = await fetchAndParseTGPH();
 
   console.log(containers);
-  for (const container of containers) {
-    if (container.name === "Used memory [MB]") {
-      testGraph.draw(container.elements);
+  let container = undefined;
+  for (const c of containers) {
+    if (c.name === "Used memory [MB]") {
+      container = c;
     }
   }
+
+  graph = createLineGraphForContainer(container);
+  graph.draw();
 };
 
 window.addEventListener("resize", (_) => {
-  if (containers === undefined) {
+  if (graph === undefined) {
     return;
   }
 
-  for (const container of containers) {
-    if (container.name === "Used memory [MB]") {
-      testGraph.draw(containers.elements);
-    }
-  }
+  graph.draw();
 });
