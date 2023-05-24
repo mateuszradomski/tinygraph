@@ -30,7 +30,6 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let mut points_saved = 0;
     let mut sys = System::new_all();
     let mut stdout = stdout();
 
@@ -42,6 +41,8 @@ fn main() {
         }
         Err(_) => TGPH::new(args.entry_limit),
     };
+
+    let mut points_saved = tgph.containers.len();
 
     loop {
         sys.refresh_all();
