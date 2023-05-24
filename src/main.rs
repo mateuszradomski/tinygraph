@@ -42,7 +42,15 @@ fn main() {
         Err(_) => TGPH::new(args.entry_limit),
     };
 
-    let mut points_saved = tgph.containers.len();
+    let mut points_saved = if tgph.containers.len() == 0 {
+        0
+    } else {
+        match &tgph.containers[0].elements {
+            tgph_format::ElementArrayType::U32(v) => v.len(),
+            tgph_format::ElementArrayType::FLOAT32(v) => v.len(),
+            tgph_format::ElementArrayType::STRING(v) => v.len(),
+        }
+    };
 
     loop {
         sys.refresh_all();
