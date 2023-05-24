@@ -47,7 +47,7 @@ impl BaseContainerElementType for u32 {
         };
 
         if let ElementArrayType::U32(elements) = &mut container.elements {
-            elements.push(self.clone());
+            elements.push(*self);
             while elements.len() > tgph.entry_limit {
                 elements.remove(0);
             }
@@ -73,7 +73,7 @@ impl BaseContainerElementType for f32 {
         };
 
         if let ElementArrayType::FLOAT32(elements) = &mut container.elements {
-            elements.push(self.clone());
+            elements.push(*self);
             while elements.len() > tgph.entry_limit {
                 elements.remove(0);
             }
@@ -170,7 +170,7 @@ pub struct TGPHContainer {
 impl TGPHContainer {
     fn serialize_string_into<W: Write>(stream: &mut W, string: &str) -> Result<(), std::io::Error> {
         if string.len() >= 255 {
-            stream.write_all(&(0xff as u8).to_le_bytes())?;
+            stream.write_all(&0xff_u8.to_le_bytes())?;
             stream.write_all(&(string.len() as u16).to_le_bytes())?;
             stream.write_all(string.as_bytes())?;
         } else {
@@ -272,11 +272,13 @@ impl TGPHContainer {
 #[cfg(test)]
 mod serialize {
     use crate::tgph_format::*;
+    use std::f32::consts::PI;
+
     #[test]
     fn default_tgph() {
         let tgph = TGPH::default();
         assert_eq!(
-            String::from_utf8((&tgph.magic.to_le_bytes()).to_vec()).unwrap(),
+            String::from_utf8(tgph.magic.to_le_bytes().to_vec()).unwrap(),
             "TGPH"
         );
     }
@@ -300,9 +302,9 @@ mod serialize {
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container.name.as_bytes());
+        expected.extend_from_slice(container.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
-        expected.extend_from_slice(&(0 as u32).to_le_bytes()); // Element Count
+        expected.extend_from_slice(&0_u32.to_le_bytes()); // Element Count
 
         tgph.add_container(container);
         let mut output_buffer = Vec::new();
@@ -322,12 +324,12 @@ mod serialize {
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container.name.as_bytes());
+        expected.extend_from_slice(container.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
-        expected.extend_from_slice(&(4 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(12 as u32).to_le_bytes());
-        expected.extend_from_slice(&(34 as u32).to_le_bytes());
-        expected.extend_from_slice(&(56 as u32).to_le_bytes());
+        expected.extend_from_slice(&4_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&12_u32.to_le_bytes());
+        expected.extend_from_slice(&34_u32.to_le_bytes());
+        expected.extend_from_slice(&56_u32.to_le_bytes());
         expected.extend_from_slice(&((1 << 31) as u32).to_le_bytes());
 
         tgph.add_container(container);
@@ -342,18 +344,18 @@ mod serialize {
         let mut tgph = TGPH::default();
         let container = TGPHContainer {
             name: "testing".into(),
-            elements: ElementArrayType::FLOAT32(vec![3.14159, 1.618, 0.30000000000000004]),
+            elements: ElementArrayType::FLOAT32(vec![PI, 1.618, 0.3]),
         };
 
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container.name.as_bytes());
+        expected.extend_from_slice(container.name.as_bytes());
         expected.extend_from_slice(&[2]); // Element Type
-        expected.extend_from_slice(&(3 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(3.14159 as f32).to_le_bytes());
-        expected.extend_from_slice(&(1.618 as f32).to_le_bytes());
-        expected.extend_from_slice(&(0.30000000000000004 as f32).to_le_bytes());
+        expected.extend_from_slice(&3_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&PI.to_le_bytes());
+        expected.extend_from_slice(&1.618_f32.to_le_bytes());
+        expected.extend_from_slice(&0.3_f32.to_le_bytes());
 
         tgph.add_container(container);
         let mut output_buffer = Vec::new();
@@ -377,15 +379,15 @@ mod serialize {
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         expected.extend_from_slice(&(container.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container.name.as_bytes());
+        expected.extend_from_slice(container.name.as_bytes());
         expected.extend_from_slice(&[3]); // Element Type
-        expected.extend_from_slice(&(3 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(5 as u8).to_le_bytes());
-        expected.extend_from_slice(&("lorem".as_bytes()));
-        expected.extend_from_slice(&(5 as u8).to_le_bytes());
-        expected.extend_from_slice(&("foxem".as_bytes()));
-        expected.extend_from_slice(&(23 as u8).to_le_bytes());
-        expected.extend_from_slice(&("verylongstringemlatinem".as_bytes()));
+        expected.extend_from_slice(&3_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&5_u8.to_le_bytes());
+        expected.extend_from_slice("lorem".as_bytes());
+        expected.extend_from_slice(&5_u8.to_le_bytes());
+        expected.extend_from_slice("foxem".as_bytes());
+        expected.extend_from_slice(&23_u8.to_le_bytes());
+        expected.extend_from_slice("verylongstringemlatinem".as_bytes());
 
         tgph.add_container(container);
         let mut output_buffer = Vec::new();
@@ -403,7 +405,7 @@ mod serialize {
         };
         let container2 = TGPHContainer {
             name: "floats".into(),
-            elements: ElementArrayType::FLOAT32(vec![3.14159, 1.618, 0.30000000000000004]),
+            elements: ElementArrayType::FLOAT32(vec![PI, 1.618, 0.3]),
         };
         let container3 = TGPHContainer {
             name: "strings".into(),
@@ -417,30 +419,30 @@ mod serialize {
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x03, 0x00]);
         expected.extend_from_slice(&(container1.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container1.name.as_bytes());
+        expected.extend_from_slice(container1.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
-        expected.extend_from_slice(&(4 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(12 as u32).to_le_bytes());
-        expected.extend_from_slice(&(34 as u32).to_le_bytes());
-        expected.extend_from_slice(&(56 as u32).to_le_bytes());
+        expected.extend_from_slice(&4_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&12_u32.to_le_bytes());
+        expected.extend_from_slice(&34_u32.to_le_bytes());
+        expected.extend_from_slice(&56_u32.to_le_bytes());
         expected.extend_from_slice(&((1 << 31) as u32).to_le_bytes());
         expected.extend_from_slice(&(container2.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container2.name.as_bytes());
+        expected.extend_from_slice(container2.name.as_bytes());
         expected.extend_from_slice(&[2]); // Element Type
-        expected.extend_from_slice(&(3 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(3.14159 as f32).to_le_bytes());
-        expected.extend_from_slice(&(1.618 as f32).to_le_bytes());
-        expected.extend_from_slice(&(0.30000000000000004 as f32).to_le_bytes());
+        expected.extend_from_slice(&3_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&PI.to_le_bytes());
+        expected.extend_from_slice(&1.618_f32.to_le_bytes());
+        expected.extend_from_slice(&0.3_f32.to_le_bytes());
         expected.extend_from_slice(&(container3.name.len() as u8).to_le_bytes());
-        expected.extend_from_slice(&container3.name.as_bytes());
+        expected.extend_from_slice(container3.name.as_bytes());
         expected.extend_from_slice(&[3]); // Element Type
-        expected.extend_from_slice(&(3 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(5 as u8).to_le_bytes());
-        expected.extend_from_slice(&("lorem".as_bytes()));
-        expected.extend_from_slice(&(5 as u8).to_le_bytes());
-        expected.extend_from_slice(&("foxem".as_bytes()));
-        expected.extend_from_slice(&(23 as u8).to_le_bytes());
-        expected.extend_from_slice(&("verylongstringemlatinem".as_bytes()));
+        expected.extend_from_slice(&3_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&5_u8.to_le_bytes());
+        expected.extend_from_slice("lorem".as_bytes());
+        expected.extend_from_slice(&5_u8.to_le_bytes());
+        expected.extend_from_slice("foxem".as_bytes());
+        expected.extend_from_slice(&23_u8.to_le_bytes());
+        expected.extend_from_slice("verylongstringemlatinem".as_bytes());
 
         tgph.add_container(container1);
         tgph.add_container(container2);
@@ -461,14 +463,14 @@ mod serialize {
 
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
-        expected.extend_from_slice(&(0xff as u8).to_le_bytes());
+        expected.extend_from_slice(&0xff_u8.to_le_bytes());
         expected.extend_from_slice(&(container.name.len() as u16).to_le_bytes());
-        expected.extend_from_slice(&container.name.as_bytes());
+        expected.extend_from_slice(container.name.as_bytes());
         expected.extend_from_slice(&[1]); // Element Type
-        expected.extend_from_slice(&(4 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(12 as u32).to_le_bytes());
-        expected.extend_from_slice(&(34 as u32).to_le_bytes());
-        expected.extend_from_slice(&(56 as u32).to_le_bytes());
+        expected.extend_from_slice(&4_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&12_u32.to_le_bytes());
+        expected.extend_from_slice(&34_u32.to_le_bytes());
+        expected.extend_from_slice(&56_u32.to_le_bytes());
         expected.extend_from_slice(&((1 << 31) as u32).to_le_bytes());
 
         tgph.add_container(container);
@@ -491,17 +493,17 @@ mod serialize {
 
         let mut expected: Vec<u8> = Vec::new();
         expected.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
-        expected.extend_from_slice(&(0xff as u8).to_le_bytes());
+        expected.extend_from_slice(&0xff_u8.to_le_bytes());
         expected.extend_from_slice(&(container.name.len() as u16).to_le_bytes());
-        expected.extend_from_slice(&container.name.as_bytes());
+        expected.extend_from_slice(container.name.as_bytes());
         expected.extend_from_slice(&[3]); // Element Type
-        expected.extend_from_slice(&(2 as u32).to_le_bytes()); // Element Count
-        expected.extend_from_slice(&(0xff as u8).to_le_bytes());
-        expected.extend_from_slice(&(1000 as u16).to_le_bytes());
-        expected.extend_from_slice(&("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".as_bytes()));
-        expected.extend_from_slice(&(0xff as u8).to_le_bytes());
-        expected.extend_from_slice(&(1024 as u16).to_le_bytes());
-        expected.extend_from_slice(&("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++".as_bytes()));
+        expected.extend_from_slice(&2_u32.to_le_bytes()); // Element Count
+        expected.extend_from_slice(&0xff_u8.to_le_bytes());
+        expected.extend_from_slice(&1000_u16.to_le_bytes());
+        expected.extend_from_slice("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".as_bytes());
+        expected.extend_from_slice(&0xff_u8.to_le_bytes());
+        expected.extend_from_slice(&1024_u16.to_le_bytes());
+        expected.extend_from_slice("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++".as_bytes());
 
         tgph.add_container(container);
         let mut output_buffer = Vec::new();
@@ -514,6 +516,7 @@ mod serialize {
 #[cfg(test)]
 mod deserialize {
     use std::io::Cursor;
+    use std::f32::consts::PI;
 
     use crate::tgph_format::*;
     #[test]
@@ -523,7 +526,7 @@ mod deserialize {
         let tgph = TGPH::deserialize_from(&mut cursor).unwrap();
 
         assert_eq!(
-            String::from_utf8((&tgph.magic.to_le_bytes()).to_vec()).unwrap(),
+            String::from_utf8(tgph.magic.to_le_bytes().to_vec()).unwrap(),
             "TGPH"
         );
 
@@ -538,15 +541,15 @@ mod deserialize {
 
         bytes.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         bytes.extend_from_slice(&(container_name.len() as u8).to_le_bytes());
-        bytes.extend_from_slice(&container_name.as_bytes());
+        bytes.extend_from_slice(container_name.as_bytes());
         bytes.extend_from_slice(&[1]); // Element Type
-        bytes.extend_from_slice(&(0 as u32).to_le_bytes()); // Element Count
+        bytes.extend_from_slice(&0_u32.to_le_bytes()); // Element Count
 
         let mut cursor = Cursor::new(bytes);
         let tgph = TGPH::deserialize_from(&mut cursor).unwrap();
 
         assert_eq!(
-            String::from_utf8((&tgph.magic.to_le_bytes()).to_vec()).unwrap(),
+            String::from_utf8(tgph.magic.to_le_bytes().to_vec()).unwrap(),
             "TGPH"
         );
 
@@ -567,19 +570,19 @@ mod deserialize {
         let container_name = "bigredbarrow";
         bytes.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
         bytes.extend_from_slice(&(container_name.len() as u8).to_le_bytes());
-        bytes.extend_from_slice(&container_name.as_bytes());
+        bytes.extend_from_slice(container_name.as_bytes());
         bytes.extend_from_slice(&[1]); // Element Type
-        bytes.extend_from_slice(&(4 as u32).to_le_bytes()); // Element Count
-        bytes.extend_from_slice(&(12 as u32).to_le_bytes());
-        bytes.extend_from_slice(&(34 as u32).to_le_bytes());
-        bytes.extend_from_slice(&(56 as u32).to_le_bytes());
+        bytes.extend_from_slice(&4_u32.to_le_bytes()); // Element Count
+        bytes.extend_from_slice(&12_u32.to_le_bytes());
+        bytes.extend_from_slice(&34_u32.to_le_bytes());
+        bytes.extend_from_slice(&56_u32.to_le_bytes());
         bytes.extend_from_slice(&((1 << 31) as u32).to_le_bytes());
 
         let mut cursor = Cursor::new(bytes);
         let tgph = TGPH::deserialize_from(&mut cursor).unwrap();
 
         assert_eq!(
-            String::from_utf8((&tgph.magic.to_le_bytes()).to_vec()).unwrap(),
+            String::from_utf8(tgph.magic.to_le_bytes().to_vec()).unwrap(),
             "TGPH"
         );
 
@@ -606,36 +609,36 @@ mod deserialize {
         let container_name3 = "jumped over THE LAZY";
         bytes.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x03, 0x00]);
         bytes.extend_from_slice(&(container_name1.len() as u8).to_le_bytes());
-        bytes.extend_from_slice(&container_name1.as_bytes());
+        bytes.extend_from_slice(container_name1.as_bytes());
         bytes.extend_from_slice(&[1]); // Element Type
-        bytes.extend_from_slice(&(4 as u32).to_le_bytes()); // Element Count
-        bytes.extend_from_slice(&(12 as u32).to_le_bytes());
-        bytes.extend_from_slice(&(34 as u32).to_le_bytes());
-        bytes.extend_from_slice(&(56 as u32).to_le_bytes());
+        bytes.extend_from_slice(&4_u32.to_le_bytes()); // Element Count
+        bytes.extend_from_slice(&12_u32.to_le_bytes());
+        bytes.extend_from_slice(&34_u32.to_le_bytes());
+        bytes.extend_from_slice(&56_u32.to_le_bytes());
         bytes.extend_from_slice(&((1 << 31) as u32).to_le_bytes());
         bytes.extend_from_slice(&(container_name2.len() as u8).to_le_bytes());
-        bytes.extend_from_slice(&container_name2.as_bytes());
+        bytes.extend_from_slice(container_name2.as_bytes());
         bytes.extend_from_slice(&[2]); // Element Type
-        bytes.extend_from_slice(&(3 as u32).to_le_bytes()); // Element Count
-        bytes.extend_from_slice(&(3.14159 as f32).to_le_bytes());
-        bytes.extend_from_slice(&(1.618 as f32).to_le_bytes());
-        bytes.extend_from_slice(&(0.30000000000000004 as f32).to_le_bytes());
+        bytes.extend_from_slice(&3_u32.to_le_bytes()); // Element Count
+        bytes.extend_from_slice(&PI.to_le_bytes());
+        bytes.extend_from_slice(&1.618_f32.to_le_bytes());
+        bytes.extend_from_slice(&0.3_f32.to_le_bytes());
         bytes.extend_from_slice(&(container_name3.len() as u8).to_le_bytes());
-        bytes.extend_from_slice(&container_name3.as_bytes());
+        bytes.extend_from_slice(container_name3.as_bytes());
         bytes.extend_from_slice(&[3]); // Element Type
-        bytes.extend_from_slice(&(3 as u32).to_le_bytes()); // Element Count
-        bytes.extend_from_slice(&(5 as u8).to_le_bytes());
-        bytes.extend_from_slice(&("lorem".as_bytes()));
-        bytes.extend_from_slice(&(5 as u8).to_le_bytes());
-        bytes.extend_from_slice(&("foxem".as_bytes()));
-        bytes.extend_from_slice(&(23 as u8).to_le_bytes());
-        bytes.extend_from_slice(&("verylongstringemlatinem".as_bytes()));
+        bytes.extend_from_slice(&3_u32.to_le_bytes()); // Element Count
+        bytes.extend_from_slice(&5_u8.to_le_bytes());
+        bytes.extend_from_slice("lorem".as_bytes());
+        bytes.extend_from_slice(&5_u8.to_le_bytes());
+        bytes.extend_from_slice("foxem".as_bytes());
+        bytes.extend_from_slice(&23_u8.to_le_bytes());
+        bytes.extend_from_slice("verylongstringemlatinem".as_bytes());
 
         let mut cursor = Cursor::new(bytes);
         let tgph = TGPH::deserialize_from(&mut cursor).unwrap();
 
         assert_eq!(
-            String::from_utf8((&tgph.magic.to_le_bytes()).to_vec()).unwrap(),
+            String::from_utf8(tgph.magic.to_le_bytes().to_vec()).unwrap(),
             "TGPH"
         );
 
@@ -656,9 +659,9 @@ mod deserialize {
         assert_eq!(tgph.containers[1].name, container_name2);
         if let ElementArrayType::FLOAT32(elements) = &tgph.containers[1].elements {
             assert_eq!(elements.len(), 3);
-            assert_eq!(elements[0], 3.14159);
+            assert_eq!(elements[0], PI);
             assert_eq!(elements[1], 1.618);
-            assert_eq!(elements[2], 0.30000000000000004);
+            assert_eq!(elements[2], 0.3);
         } else {
             unreachable!();
         }
@@ -679,23 +682,23 @@ mod deserialize {
         let mut bytes: Vec<u8> = Vec::new();
         let container_name = "88g8g8g8g01023-123-13-12-31-23";
         bytes.extend_from_slice(&[0x54, 0x47, 0x50, 0x48, 0x01, 0x01, 0x00]);
-        bytes.extend_from_slice(&(0xff as u8).to_le_bytes());
+        bytes.extend_from_slice(&0xff_u8.to_le_bytes());
         bytes.extend_from_slice(&(container_name.len() as u16).to_le_bytes());
-        bytes.extend_from_slice(&container_name.as_bytes());
+        bytes.extend_from_slice(container_name.as_bytes());
         bytes.extend_from_slice(&[3]); // Element Type
-        bytes.extend_from_slice(&(2 as u32).to_le_bytes()); // Element Count
-        bytes.extend_from_slice(&(0xff as u8).to_le_bytes());
-        bytes.extend_from_slice(&(1000 as u16).to_le_bytes());
-        bytes.extend_from_slice(&("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".as_bytes()));
-        bytes.extend_from_slice(&(0xff as u8).to_le_bytes());
-        bytes.extend_from_slice(&(1024 as u16).to_le_bytes());
-        bytes.extend_from_slice(&("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++".as_bytes()));
+        bytes.extend_from_slice(&2_u32.to_le_bytes()); // Element Count
+        bytes.extend_from_slice(&0xff_u8.to_le_bytes());
+        bytes.extend_from_slice(&1000_u16.to_le_bytes());
+        bytes.extend_from_slice("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".as_bytes());
+        bytes.extend_from_slice(&0xff_u8.to_le_bytes());
+        bytes.extend_from_slice(&1024_u16.to_le_bytes());
+        bytes.extend_from_slice("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++".as_bytes());
 
         let mut cursor = Cursor::new(bytes);
         let tgph = TGPH::deserialize_from(&mut cursor).unwrap();
 
         assert_eq!(
-            String::from_utf8((&tgph.magic.to_le_bytes()).to_vec()).unwrap(),
+            String::from_utf8(tgph.magic.to_le_bytes().to_vec()).unwrap(),
             "TGPH"
         );
 
