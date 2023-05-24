@@ -1,22 +1,49 @@
-use std::{thread::sleep, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    thread::sleep,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt};
 
 use std::io::{stdout, Write};
 
+use clap::Parser;
+
 mod tgph_format;
 use tgph_format::TGPH;
 
+/// Gather data about system state
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Where to save the data, if file already exists start appending
+    output_path: String,
+
+    /// How many entries per container are allowed
+    entry_limit: usize,
+
+    /// How many seconds between each system state read
+    timeout_period: u64,
+}
+
 fn main() {
+    let args = Args::parse();
+
     let mut points_saved = 0;
     let mut sys = System::new_all();
     let mut stdout = stdout();
 
-    let mut tgph = TGPH::default();
+    let mut tgph = TGPH::new(args.entry_limit);
     loop {
         sys.refresh_all();
 
-        tgph.append(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32, "Unix timestamp");
+        tgph.append(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as u32,
+            "Unix timestamp",
+        );
 
         for disk in sys.disks() {
             tgph.append(
@@ -41,7 +68,10 @@ fn main() {
         }
 
         for component in sys.components() {
-            tgph.append(component.temperature(), &format!("{} Temperature [C]", component.label()));
+            tgph.append(
+                component.temperature(),
+                &format!("{} Temperature [C]", component.label()),
+            );
         }
 
         tgph.append(sys.cpus().len() as u32, "CPU Count");
@@ -73,7 +103,7 @@ fn main() {
             "Hostname",
         );
 
-        let mut output_file = std::fs::File::create("data.tgph").unwrap();
+        let mut output_file = std::fs::File::create(args.output_path.clone()).unwrap();
         tgph.serialize_into(&mut output_file).unwrap();
 
         points_saved += 1;
@@ -81,6 +111,6 @@ fn main() {
         print!("\rSaved {points_saved} snapshots");
         stdout.flush().unwrap();
 
-        sleep(std::time::Duration::from_secs(15));
+        sleep(std::time::Duration::from_secs(args.timeout_period));
     }
 }

@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 sysinfo = "0.29.0"
 byteorder = "1.0.0"
+clap = { version = "4.3.0", features = ["derive"] }

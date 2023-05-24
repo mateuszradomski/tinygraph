@@ -7,7 +7,6 @@ pub trait BaseContainerElementType {
 
 impl BaseContainerElementType for String {
     fn push_element(&self, tgph: &mut TGPH, name: &str) {
-        let limit = 1000;
         let container = match tgph.containers.iter_mut().find(|c| c.name == name) {
             Some(v) => v,
             None => {
@@ -23,7 +22,7 @@ impl BaseContainerElementType for String {
 
         if let ElementArrayType::STRING(elements) = &mut container.elements {
             elements.push(self.clone());
-            while elements.len() > limit {
+            while elements.len() > tgph.entry_limit {
                 elements.remove(0);
             }
         } else {
@@ -34,7 +33,6 @@ impl BaseContainerElementType for String {
 
 impl BaseContainerElementType for u32 {
     fn push_element(&self, tgph: &mut TGPH, name: &str) {
-        let limit = 1000;
         let container = match tgph.containers.iter_mut().find(|c| c.name == name) {
             Some(v) => v,
             None => {
@@ -50,7 +48,7 @@ impl BaseContainerElementType for u32 {
 
         if let ElementArrayType::U32(elements) = &mut container.elements {
             elements.push(self.clone());
-            while elements.len() > limit {
+            while elements.len() > tgph.entry_limit {
                 elements.remove(0);
             }
         } else {
@@ -61,7 +59,6 @@ impl BaseContainerElementType for u32 {
 
 impl BaseContainerElementType for f32 {
     fn push_element(&self, tgph: &mut TGPH, name: &str) {
-        let limit = 1000;
         let container = match tgph.containers.iter_mut().find(|c| c.name == name) {
             Some(v) => v,
             None => {
@@ -77,7 +74,7 @@ impl BaseContainerElementType for f32 {
 
         if let ElementArrayType::FLOAT32(elements) = &mut container.elements {
             elements.push(self.clone());
-            while elements.len() > limit {
+            while elements.len() > tgph.entry_limit {
                 elements.remove(0);
             }
         } else {
@@ -90,15 +87,26 @@ pub struct TGPH {
     magic: u32,
     version: u8,
     pub containers: Vec<TGPHContainer>,
+
+    entry_limit: usize,
 }
 
 impl Default for TGPH {
     fn default() -> Self {
-        return Self {
+        Self {
             magic: 0x48504754,
             version: 1,
             containers: Vec::default(),
-        };
+            entry_limit: 1000,
+        }
+    }
+}
+
+impl TGPH {
+    pub fn new(entry_limit: usize) -> Self {
+        let mut def = Self::default();
+        def.entry_limit = entry_limit;
+        def
     }
 }
 
@@ -114,11 +122,9 @@ impl TGPH {
     }
 
     pub fn deserialize_from<R: Read>(stream: &mut R) -> Result<Self, std::io::Error> {
-        let mut result = Self {
-            magic: stream.read_u32::<LittleEndian>()?,
-            version: stream.read_u8()?,
-            containers: Vec::default(),
-        };
+        let mut result = Self::default();
+        result.magic = stream.read_u32::<LittleEndian>()?;
+        result.version = stream.read_u8()?;
 
         let container_num = stream.read_u16::<LittleEndian>()?;
 
@@ -131,7 +137,7 @@ impl TGPH {
         Ok(result)
     }
 
-    pub fn add_container(self: &mut Self, container: TGPHContainer) {
+    pub fn add_container(&mut self, container: TGPHContainer) {
         self.containers.push(container);
     }
 
@@ -147,11 +153,11 @@ pub enum ElementArrayType {
 }
 
 impl ElementArrayType {
-    fn get_index(self: &Self) -> u8 {
+    fn get_index(&self) -> u8 {
         match self {
-            Self::U32(_) => return 1,
-            Self::FLOAT32(_) => return 2,
-            Self::STRING(_) => return 3,
+            Self::U32(_) => 1,
+            Self::FLOAT32(_) => 2,
+            Self::STRING(_) => 3,
         }
     }
 }
@@ -175,7 +181,7 @@ impl TGPHContainer {
         Ok(())
     }
 
-    pub fn serialize_into<W: Write>(self: &Self, stream: &mut W) -> Result<(), std::io::Error> {
+    pub fn serialize_into<W: Write>(&self, stream: &mut W) -> Result<(), std::io::Error> {
         TGPHContainer::serialize_string_into(stream, &self.name)?;
 
         stream.write_all(&self.elements.get_index().to_le_bytes())?;
