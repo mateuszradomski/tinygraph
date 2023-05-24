@@ -14,8 +14,10 @@ function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
   const div = document.createElement("div");
   if (isHalfSize) {
     div.setAttribute("class", "half_graph");
+    div.setAttribute("style", "position: relative;");
   } else {
     div.setAttribute("class", "graph");
+    div.setAttribute("style", "position: relative;");
   }
 
   div.appendChild(svg);
@@ -144,9 +146,51 @@ async function fetchAndParseTGPH() {
   return containers;
 }
 
+class HoverInfo {
+  constructor() {
+    this.topElement = document.createElement("div");
+    this.hide();
+  }
+
+  show() {
+    this.topElement.setAttribute("class", "");
+  }
+
+  setPosition(x, y, parentWidth, parentHeight) {
+    let horizontalStyle = "";
+    if (x > parentWidth / 2) {
+      horizontalStyle = `right: ${parentWidth - x}px`;
+    } else {
+      horizontalStyle = `left: ${x}px`;
+    }
+
+    let verticalStyle = "";
+    if (y > parentHeight / 2) {
+      verticalStyle = `bottom: ${parentHeight - y}px`;
+    } else {
+      verticalStyle = `top: ${y}px`;
+    }
+
+    this.topElement.setAttribute(
+      "style",
+      `${verticalStyle}; ${horizontalStyle}; background: pink; z-index: 50; height: 5rem; width: 10rem; position: absolute;`
+    );
+  }
+
+  hide() {
+    this.topElement.setAttribute("class", "hidden");
+  }
+}
+
 class LineGraph {
-  constructor(svg, values, name) {
-    this.svg = svg;
+  constructor(values, name) {
+    this.topElement = document.createElement("div");
+    this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
+    this.hoverInfo = new HoverInfo();
+
+    this.topElement.appendChild(this.svg);
+    this.topElement.appendChild(this.hoverInfo.topElement);
+
     this.values = values;
     this.name = name;
 
@@ -199,28 +243,37 @@ class LineGraph {
     this.svg.appendChild(this.hoverLine);
     this.svg.appendChild(this.hoverCircle);
 
-    svg.addEventListener("mousemove", (e) => {
+    this.svg.addEventListener("mousemove", (e) => {
+      const screenX = this.getClosestPointScreenSpaceX(e.offsetX);
+      const screenY = this.getClosestPointScreenSpaceY(e.offsetX);
+      this.hoverInfo.setPosition(screenX, screenY, this.width, this.height);
       setAttributes(this.hoverLine, {
-        x1: `${this.getClosestPointScreenSpaceX(e.offsetX)}`,
+        x1: `${screenX}`,
         y1: "0",
-        x2: `${this.getClosestPointScreenSpaceX(e.offsetX)}`,
+        x2: `${screenX}`,
         y2: "600",
       });
       setAttributes(this.hoverCircle, {
-        cx: `${this.getClosestPointScreenSpaceX(e.offsetX)}`,
-        cy: `${this.getClosestPointScreenSpaceY(e.offsetX)}`,
+        cx: `${screenX}`,
+        cy: `${screenY}`,
       });
     });
 
-    svg.addEventListener("mouseenter", (_) => {
+    this.svg.addEventListener("mouseenter", (_) => {
       this.hoverLine.setAttribute("class", "");
       this.hoverCircle.setAttribute("class", "");
+      this.hoverInfo.show();
     });
 
-    svg.addEventListener("mouseleave", (_) => {
+    this.svg.addEventListener("mouseleave", (_) => {
       this.hoverLine.setAttribute("class", "hidden");
       this.hoverCircle.setAttribute("class", "hidden");
+      this.hoverInfo.hide();
     });
+  }
+
+  getTopElement() {
+    return this.topElement;
   }
 
   // TODO(radomski): Multilines, add nonce
@@ -334,9 +387,8 @@ class LineGraph {
 const insertDiv = document.getElementById("global_insert_space");
 
 function createLineGraphForContainer(container, halfSize) {
-  const svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
-  wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, svg);
-  const graph = new LineGraph(svg, container.elements, container.name);
+  const graph = new LineGraph(container.elements, container.name);
+  wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, graph.getTopElement());
   return graph;
 }
 
