@@ -5,5 +5,3 @@
 
 // From main.rs
 - gzip - https://github.com/adamkewley/libdeflater
-- clap - https://lib.rs/crates/clap
-- read existing file from filesystem, get limit
