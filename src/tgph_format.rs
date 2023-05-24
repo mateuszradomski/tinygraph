@@ -88,7 +88,7 @@ pub struct TGPH {
     version: u8,
     pub containers: Vec<TGPHContainer>,
 
-    entry_limit: usize,
+    pub entry_limit: usize,
 }
 
 impl Default for TGPH {
@@ -515,8 +515,8 @@ mod serialize {
 
 #[cfg(test)]
 mod deserialize {
-    use std::io::Cursor;
     use std::f32::consts::PI;
+    use std::io::Cursor;
 
     use crate::tgph_format::*;
     #[test]

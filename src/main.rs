@@ -1,6 +1,7 @@
 use std::{
+    fs::File,
     thread::sleep,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt};
@@ -33,7 +34,15 @@ fn main() {
     let mut sys = System::new_all();
     let mut stdout = stdout();
 
-    let mut tgph = TGPH::new(args.entry_limit);
+    let mut tgph = match File::open(args.output_path.clone()) {
+        Ok(mut file) => {
+            let mut res = TGPH::deserialize_from(&mut file).unwrap();
+            res.entry_limit = args.entry_limit;
+            res
+        }
+        Err(_) => TGPH::new(args.entry_limit),
+    };
+
     loop {
         sys.refresh_all();
 
@@ -103,7 +112,7 @@ fn main() {
             "Hostname",
         );
 
-        let mut output_file = std::fs::File::create(args.output_path.clone()).unwrap();
+        let mut output_file = File::create(args.output_path.clone()).unwrap();
         tgph.serialize_into(&mut output_file).unwrap();
 
         points_saved += 1;
@@ -111,6 +120,6 @@ fn main() {
         print!("\rSaved {points_saved} snapshots");
         stdout.flush().unwrap();
 
-        sleep(std::time::Duration::from_secs(args.timeout_period));
+        sleep(Duration::from_secs(args.timeout_period));
     }
 }
