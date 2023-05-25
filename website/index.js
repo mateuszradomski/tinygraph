@@ -189,13 +189,21 @@ class HoverInfo {
     this.topElement.setAttribute("class", "");
   }
 
+  padWithZero(val) {
+    return val < 10 ? `0${val}` : `${val}`;
+  }
+
   updateInformation(data, timestamp, x, y, parentWidth, parentHeight) {
     this.setPosition(x, y, parentWidth, parentHeight);
     this.valueParagraph.textContent = data;
     const date = new Date(timestamp * 1000);
-    this.timeParagraph.textContent = `${date.getFullYear()} ${
-      monthNames[date.getMonth() - 1]
-    } ${date.getDay()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+    const yy = date.getFullYear();
+    const mm = monthNames[date.getMonth() - 1];
+    const dd = this.padWithZero(date.getDay());
+    const HH = this.padWithZero(date.getHours());
+    const MM = this.padWithZero(date.getMinutes());
+    const SS = this.padWithZero(date.getSeconds());
+    this.timeParagraph.textContent = `${yy} ${mm} ${dd} ${HH}:${MM}:${SS}`;
   }
 
   setPosition(x, y, parentWidth, parentHeight) {
