@@ -150,14 +150,52 @@ function convertRemToPixels(rem) {
   return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
 
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 class HoverInfo {
   constructor() {
     this.topElement = document.createElement("div");
     this.hide();
+    this.timeParagraph = document.createElement("span");
+    this.valueParagraph = document.createElement("span");
+
+    this.valueParagraph.setAttribute(
+      "style",
+      "line-height: 1.25rem; color: #F8F8FA;"
+    );
+    this.timeParagraph.setAttribute(
+      "style",
+      "line-height: 1.25rem; color: #F8F8FA;"
+    );
+
+    this.topElement.appendChild(this.timeParagraph);
+    this.topElement.appendChild(this.valueParagraph);
   }
 
   show() {
     this.topElement.setAttribute("class", "");
+  }
+
+  updateInformation(data, timestamp, x, y, parentWidth, parentHeight) {
+    this.setPosition(x, y, parentWidth, parentHeight);
+    this.valueParagraph.textContent = data;
+    const date = new Date(timestamp * 1000);
+    this.timeParagraph.textContent = `${date.getFullYear()} ${
+      monthNames[date.getMonth() - 1]
+    } ${date.getDay()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
   }
 
   setPosition(x, y, parentWidth, parentHeight) {
@@ -185,7 +223,7 @@ class HoverInfo {
 
     this.topElement.setAttribute(
       "style",
-      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; height: 5rem; width: 10rem; position: absolute;`
+      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; display: flex; justify-content: center; flex-direction: column;`
     );
   }
 
@@ -258,7 +296,14 @@ class LineGraph {
     this.svg.addEventListener("mousemove", (e) => {
       const screenX = this.getClosestPointScreenSpaceX(e.offsetX);
       const screenY = this.getClosestPointScreenSpaceY(e.offsetX);
-      this.hoverInfo.setPosition(screenX, screenY, this.width, this.height);
+      this.hoverInfo.updateInformation(
+        97979876789876,
+        1395660658,
+        screenX,
+        screenY,
+        this.width,
+        this.height
+      );
       setAttributes(this.hoverLine, {
         x1: `${screenX}`,
         y1: "0",
