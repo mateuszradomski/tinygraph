@@ -1,7 +1,5 @@
 - Assign titles to graphs.
 - Finalize CSS styling.
-- Include a box that displays information about the point at which the mouse is hovering on the graph.
-- Ensure the X-axis represents time.
 
 // From main.rs
 - gzip - https://github.com/adamkewley/libdeflater
