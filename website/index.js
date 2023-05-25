@@ -146,6 +146,10 @@ async function fetchAndParseTGPH() {
   return containers;
 }
 
+function convertRemToPixels(rem) {
+  return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
 class HoverInfo {
   constructor() {
     this.topElement = document.createElement("div");
@@ -157,18 +161,25 @@ class HoverInfo {
   }
 
   setPosition(x, y, parentWidth, parentHeight) {
+    const height = convertRemToPixels(5);
+    const padding = convertRemToPixels(1);
+    const half_height = height / 2;
+
     let horizontalStyle = "";
     if (x > parentWidth / 2) {
-      horizontalStyle = `right: ${parentWidth - x}px`;
+      horizontalStyle = `right: ${parentWidth - x + padding}px`;
     } else {
-      horizontalStyle = `left: ${x}px`;
+      horizontalStyle = `left: ${x + padding}px`;
     }
 
     let verticalStyle = "";
-    if (y > parentHeight / 2) {
-      verticalStyle = `bottom: ${parentHeight - y}px`;
+    if (y - half_height > parentHeight / 2) {
+      verticalStyle = `bottom: ${Math.max(
+        padding,
+        parentHeight - y - half_height
+      )}px`;
     } else {
-      verticalStyle = `top: ${y}px`;
+      verticalStyle = `top: ${Math.max(padding, y - half_height)}px`;
     }
 
     this.topElement.setAttribute(
