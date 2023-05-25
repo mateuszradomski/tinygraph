@@ -223,7 +223,7 @@ class HoverInfo {
 
     this.topElement.setAttribute(
       "style",
-      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; display: flex; justify-content: center; flex-direction: column;`
+      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; display: flex; justify-content: center; flex-direction: column; padding-right: 0.6rem;`
     );
   }
 
