@@ -294,10 +294,11 @@ class LineGraph {
     this.svg.appendChild(this.hoverCircle);
 
     this.svg.addEventListener("mousemove", (e) => {
-      const screenX = this.getClosestPointScreenSpaceX(e.offsetX);
-      const screenY = this.getClosestPointScreenSpaceY(e.offsetX);
+      const pointIndex = this.getClosestPointIndex(e.offsetX);
+      const screenX = this.getClosestPointScreenSpaceX(pointIndex);
+      const screenY = this.getClosestPointScreenSpaceY(pointIndex);
       this.hoverInfo.updateInformation(
-        97979876789876,
+        this.values[pointIndex],
         1395660658,
         screenX,
         screenY,
@@ -432,12 +433,12 @@ class LineGraph {
     return dist[0] < dist[1] ? i : i + 1;
   }
 
-  getClosestPointScreenSpaceX(x) {
-    return this.getClosestPointIndex(x) * this.horizontalScaling;
+  getClosestPointScreenSpaceX(pointIndex) {
+    return pointIndex * this.horizontalScaling;
   }
 
-  getClosestPointScreenSpaceY(x) {
-    return this.toScreenSpaceHeight(this.values[this.getClosestPointIndex(x)]);
+  getClosestPointScreenSpaceY(pointIndex) {
+    return this.toScreenSpaceHeight(this.values[pointIndex]);
   }
 }
 
