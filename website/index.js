@@ -163,28 +163,29 @@ class HoverInfo {
   setPosition(x, y, parentWidth, parentHeight) {
     const height = convertRemToPixels(5);
     const padding = convertRemToPixels(1);
-    const half_height = height / 2;
+    const halfHeight = height / 2;
 
     let horizontalStyle = "";
     if (x > parentWidth / 2) {
-      horizontalStyle = `right: ${parentWidth - x + padding}px`;
+      const value = parentWidth - x + padding;
+      horizontalStyle = `right: ${value}px`;
     } else {
-      horizontalStyle = `left: ${x + padding}px`;
+      const value = x + padding;
+      horizontalStyle = `left: ${value}px`;
     }
 
     let verticalStyle = "";
-    if (y - half_height > parentHeight / 2) {
-      verticalStyle = `bottom: ${Math.max(
-        padding,
-        parentHeight - y - half_height
-      )}px`;
+    if (y - halfHeight > parentHeight / 2) {
+      const value = Math.max(padding, parentHeight - y - halfHeight);
+      verticalStyle = `bottom: ${value}px`;
     } else {
-      verticalStyle = `top: ${Math.max(padding, y - half_height)}px`;
+      const value = Math.max(padding, y - halfHeight);
+      verticalStyle = `top: ${value}px`;
     }
 
     this.topElement.setAttribute(
       "style",
-      `${verticalStyle}; ${horizontalStyle}; background: pink; z-index: 50; height: 5rem; width: 10rem; position: absolute;`
+      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; height: 5rem; width: 10rem; position: absolute;`
     );
   }
 
@@ -222,7 +223,7 @@ class LineGraph {
     });
 
     this.rulerCaptions.forEach((cap) => {
-      cap.setAttribute("style", "font: 1em serif;");
+      cap.setAttribute("style", "font: 1em serif; fill: #848484;");
       this.svg.appendChild(cap);
     });
 
