@@ -233,7 +233,7 @@ class HoverInfo {
 }
 
 class LineGraph {
-  constructor(values, name) {
+  constructor(values, times, name) {
     this.topElement = document.createElement("div");
     this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
     this.hoverInfo = new HoverInfo();
@@ -241,6 +241,7 @@ class LineGraph {
     this.topElement.appendChild(this.svg);
     this.topElement.appendChild(this.hoverInfo.topElement);
 
+    this.times = times;
     this.values = values;
     this.name = name;
 
@@ -299,7 +300,7 @@ class LineGraph {
       const screenY = this.getClosestPointScreenSpaceY(pointIndex);
       this.hoverInfo.updateInformation(
         this.values[pointIndex],
-        1395660658,
+        this.times[pointIndex],
         screenX,
         screenY,
         this.width,
@@ -444,8 +445,12 @@ class LineGraph {
 
 const insertDiv = document.getElementById("global_insert_space");
 
-function createLineGraphForContainer(container, halfSize) {
-  const graph = new LineGraph(container.elements, container.name);
+function createLineGraphForContainer(container, timeContainer, halfSize) {
+  const graph = new LineGraph(
+    container.elements,
+    timeContainer.elements,
+    container.name
+  );
   wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, graph.getTopElement());
   return graph;
 }
@@ -457,11 +462,16 @@ window.onload = async () => {
   containers = await fetchAndParseTGPH();
 
   console.log(containers);
+  const timeContainer = containers.filter(
+    (c) => c.name === "Unix timestamp"
+  )[0];
+
   graphs.push(
     createLineGraphForContainer(
       containers.filter(
         (c) => c.name === "Interface enp1s0 Received [bytes]"
       )[0],
+      timeContainer,
       true
     )
   );
@@ -470,18 +480,21 @@ window.onload = async () => {
       containers.filter(
         (c) => c.name === "Interface enp1s0 Transmitted [bytes]"
       )[0],
+      timeContainer,
       true
     )
   );
   graphs.push(
     createLineGraphForContainer(
       containers.filter((c) => c.name === "Unix timestamp")[0],
+      timeContainer,
       false
     )
   );
   graphs.push(
     createLineGraphForContainer(
       containers.filter((c) => c.name === "Used memory [MB]")[0],
+      timeContainer,
       false
     )
   );
