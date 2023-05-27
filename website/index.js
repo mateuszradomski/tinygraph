@@ -266,9 +266,47 @@ class HoverInfo {
   }
 }
 
-class Title {
-  constructor(titleText) {
+// Very poorly translated from stb_ds.h
+const STBDS_SIZE_T_BITS = 32;
+function STBDS_ROTATE_LEFT(val, n) {
+  return (val << n) | (val >> (STBDS_SIZE_T_BITS - n));
+}
+
+function STBDS_ROTATE_RIGHT(val, n) {
+  return (val >> n) | (val << (STBDS_SIZE_T_BITS - n));
+}
+
+function hashString(str) {
+  var hash = 0xcafebabe;
+  var i = 0;
+
+  while (str[i]) {
+    hash = STBDS_ROTATE_LEFT(hash, 9) + str.charCodeAt(i);
+    i++;
+  }
+
+  hash ^= 0xcafebabe;
+  hash = ~hash + (hash << 18);
+  hash ^= STBDS_ROTATE_RIGHT(hash, 31);
+  hash = hash * 21;
+  hash ^= STBDS_ROTATE_RIGHT(hash, 11);
+  hash += hash << 6;
+
+  hash ^= STBDS_ROTATE_RIGHT(hash, 22);
+
+  return hash + 0xcafebabe;
+}
+
+// TODO(radomski): Multilines, add nonce
+function generateColorFromString(name) {
+  const random = hashString(name);
+  return `hsl(${random % 360.0}, 100%, 65%)`;
+}
+
+class TitleAndLegend {
+  constructor(titleText, legendeNames) {
     this.text = titleText;
+    this.legendeNames = legendeNames;
 
     this.textElement = document.createElement("span");
     this.textElement.setAttribute("style", "font: 2rem serif; color: #F8F8FA");
@@ -290,7 +328,7 @@ class Title {
 class LineGraph {
   constructor(valueArray, times, names, title) {
     this.topElement = document.createElement("div");
-    this.title = new Title(title);
+    this.title = new TitleAndLegend(title, names);
     this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
     this.hoverInfo = new HoverInfo();
 
@@ -337,7 +375,7 @@ class LineGraph {
     this.polylines.forEach((polyline, index) => {
       setAttributes(polyline, {
         id: "data",
-        stroke: `${this.generateColorForLine(index)}`,
+        stroke: `${generateColorFromString(this.names[index])}`,
         "stroke-width": "2px",
         fill: "none",
       });
@@ -405,16 +443,6 @@ class LineGraph {
 
   getTopElement() {
     return this.topElement;
-  }
-
-  // TODO(radomski): Multilines, add nonce
-  generateColorForLine(index) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(this.names[index]);
-    // TODO(radomski): This really should be awaited
-    crypto.subtle.digest("SHA-256", data);
-    const random = data[0] | (data[1] << 8) | (data[2] << 16);
-    return `hsl(${random % 360.0}, 100%, 65%)`;
   }
 
   getMinMax(values) {
