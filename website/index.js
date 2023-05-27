@@ -308,15 +308,50 @@ class TitleAndLegend {
     );
 
     this.textElement = document.createElement("span");
-    this.textElement.setAttribute("style", "font: 2rem serif; color: #F8F8FA");
+    this.textElement.setAttribute("style", "font: 2rem serif; color: #F8F8FA;");
     this.textElement.textContent = titleText;
 
     this.topElement = document.createElement("div");
-    this.topElement.setAttribute(
+    this.topElement.setAttribute("style", "display: flex");
+    this.spanDiv = document.createElement("div");
+    this.spanDiv.setAttribute(
       "style",
       "text-align: right; padding-right: 0.5rem;"
     );
-    this.topElement.appendChild(this.textElement);
+    this.spanDiv.appendChild(this.textElement);
+
+    for (const legendeName of this.legendeNames) {
+      this.topElement.appendChild(this.createLegendeElement(legendeName));
+    }
+    this.topElement.appendChild(this.spanDiv);
+  }
+
+  createLegendeElement(legendeName) {
+    const div = document.createElement("div");
+    const svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
+    const line = document.createElementNS(SVG_HTML_NAMESPACE, "line");
+    const nameText = document.createElement("span");
+    nameText.textContent = legendeName;
+    nameText.setAttribute("style", "color: #F8F8FA;");
+
+    setAttributes(svg, {
+      width: "20",
+      height: "10",
+    });
+    setAttributes(line, {
+      x1: "0",
+      y1: "5",
+      x2: "20",
+      y2: "5",
+      stroke: generateColorFromString(legendeName),
+      "stroke-width": "2px",
+    });
+
+    svg.appendChild(line);
+    div.appendChild(svg);
+    div.appendChild(nameText);
+
+    return div;
   }
 
   getElement() {
@@ -329,6 +364,7 @@ class LineGraph {
     this.topElement = document.createElement("div");
     this.title = new TitleAndLegend(title, names);
     this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
+    this.svg.setAttribute("class", "full_svgs");
     this.hoverInfo = new HoverInfo();
 
     this.svgWrapper = document.createElement("div");
