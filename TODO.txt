@@ -1,6 +1,6 @@
 - Finalize CSS styling.
+- legende, better responsive maybe
 - When there is a lot of values, create a rolling window with Math.max to create a approximation of the shape with fewer points
-- Add legend
 
 // From main.rs
 - gzip - https://github.com/adamkewley/libdeflater

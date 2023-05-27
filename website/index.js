@@ -636,12 +636,26 @@ window.onload = async () => {
   );
   graphs.push(
     createLineGraphForContainer(
-      containers.filter(
-        (c) => c.name === "Used memory [MB]" || c.name === "Used swap [MB]"
-      ),
+      containers.filter((c) => c.name.includes("memory")),
       timeContainer,
       false,
       "RAM usage"
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name.includes("sda")),
+      timeContainer,
+      false,
+      "Disk [sda] usage"
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name.includes("sdb")),
+      timeContainer,
+      false,
+      "Disk [sdb] usage"
     )
   );
   graphs.push(
