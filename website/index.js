@@ -644,6 +644,14 @@ window.onload = async () => {
   );
   graphs.push(
     createLineGraphForContainer(
+      containers.filter((c) => c.name.includes("mmcblk0")),
+      timeContainer,
+      false,
+      "Internal disk usage"
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
       containers.filter((c) => c.name.includes("sda")),
       timeContainer,
       false,
