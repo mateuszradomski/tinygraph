@@ -192,13 +192,14 @@ class HoverInfo {
     dataArrays,
     pointIndex,
     timestamp,
+    names,
     x,
     y,
     parentWidth,
     parentHeight
   ) {
     this.setPosition(x, y, parentWidth, parentHeight);
-    this.createValueParagraphs(dataArrays, pointIndex);
+    this.createValueParagraphs(dataArrays, pointIndex, names);
     this.valueParagraphs.textContent = dataArrays[1][pointIndex];
     const date = new Date(timestamp * 1000);
     const yy = date.getFullYear();
@@ -210,7 +211,7 @@ class HoverInfo {
     this.timeParagraph.textContent = `${yy} ${mm} ${dd} ${HH}:${MM}:${SS}`;
   }
 
-  createValueParagraphs(dataArrays, pointIndex) {
+  createValueParagraphs(dataArrays, pointIndex, names) {
     if (this.valueParagraphs.length !== dataArrays.length) {
       this.valueParagraphs.forEach((p) => this.topElement.removeChild(p));
       this.valueParagraphs = [];
@@ -226,7 +227,8 @@ class HoverInfo {
     });
 
     for (let i = 0; i < dataArrays.length; i++) {
-      this.valueParagraphs[i].textContent = dataArrays[i][pointIndex];
+      const text = `${names[i]} : ${dataArrays[i][pointIndex]}`;
+      this.valueParagraphs[i].textContent = text;
     }
   }
 
@@ -255,7 +257,7 @@ class HoverInfo {
 
     this.topElement.setAttribute(
       "style",
-      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; display: flex; justify-content: center; flex-direction: column; padding-right: 0.6rem;`
+      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; padding-left: 1rem; display: flex; justify-content: center; flex-direction: column; padding-right: 0.6rem;`
     );
   }
 
@@ -342,6 +344,7 @@ class LineGraph {
         this.valueArray,
         pointIndex,
         this.times[pointIndex],
+        this.names,
         screenX,
         screenY,
         this.width,
@@ -416,7 +419,6 @@ class LineGraph {
     this.paddingRoom = this.paddingSpace * 2;
     this.paddedHeight = this.height - this.paddingRoom;
 
-    console.log(this.valueArray.length);
     const [min, max] = this.valueArray
       .map((values) => this.getMinMax(values))
       .reduce(([lmin, lmax], [rmin, rmax]) => [
@@ -500,7 +502,7 @@ function createLineGraphForContainer(containers, timeContainer, halfSize) {
   const elements = [];
   const names = [];
   containers.forEach((c) => elements.push(c.elements));
-  containers.forEach((c) => names.push(c.elements));
+  containers.forEach((c) => names.push(c.name));
   const graph = new LineGraph(elements, timeContainer.elements, names);
   wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, graph.getTopElement());
   return graph;
