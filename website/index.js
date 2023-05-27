@@ -267,22 +267,19 @@ class HoverInfo {
 }
 
 // Very poorly translated from stb_ds.h
-const STBDS_SIZE_T_BITS = 32;
 function STBDS_ROTATE_LEFT(val, n) {
-  return (val << n) | (val >> (STBDS_SIZE_T_BITS - n));
+  return val << n;
 }
 
 function STBDS_ROTATE_RIGHT(val, n) {
-  return (val >> n) | (val << (STBDS_SIZE_T_BITS - n));
+  return val >> n;
 }
 
 function hashString(str) {
   var hash = 0xcafebabe;
-  var i = 0;
 
-  while (str[i]) {
-    hash = STBDS_ROTATE_LEFT(hash, 9) + str.charCodeAt(i);
-    i++;
+  for (let i = 0; i < str.length; i++) {
+    hash += STBDS_ROTATE_LEFT(hash, 9) + str.charCodeAt(i);
   }
 
   hash ^= 0xcafebabe;
@@ -291,7 +288,6 @@ function hashString(str) {
   hash = hash * 21;
   hash ^= STBDS_ROTATE_RIGHT(hash, 11);
   hash += hash << 6;
-
   hash ^= STBDS_ROTATE_RIGHT(hash, 22);
 
   return hash + 0xcafebabe;
@@ -307,6 +303,9 @@ class TitleAndLegend {
   constructor(titleText, legendeNames) {
     this.text = titleText;
     this.legendeNames = legendeNames;
+    this.legendeColors = legendeNames.map((name) =>
+      generateColorFromString(name)
+    );
 
     this.textElement = document.createElement("span");
     this.textElement.setAttribute("style", "font: 2rem serif; color: #F8F8FA");
