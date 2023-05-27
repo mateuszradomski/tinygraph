@@ -170,19 +170,14 @@ class HoverInfo {
     this.topElement = document.createElement("div");
     this.hide();
     this.timeParagraph = document.createElement("span");
-    this.valueParagraph = document.createElement("span");
+    this.valueParagraphs = [];
 
-    this.valueParagraph.setAttribute(
-      "style",
-      "line-height: 1.25rem; color: #F8F8FA;"
-    );
     this.timeParagraph.setAttribute(
       "style",
       "line-height: 1.25rem; color: #F8F8FA;"
     );
 
     this.topElement.appendChild(this.timeParagraph);
-    this.topElement.appendChild(this.valueParagraph);
   }
 
   show() {
@@ -193,9 +188,18 @@ class HoverInfo {
     return val < 10 ? `0${val}` : `${val}`;
   }
 
-  updateInformation(data, timestamp, x, y, parentWidth, parentHeight) {
+  updateInformation(
+    dataArrays,
+    pointIndex,
+    timestamp,
+    x,
+    y,
+    parentWidth,
+    parentHeight
+  ) {
     this.setPosition(x, y, parentWidth, parentHeight);
-    this.valueParagraph.textContent = data;
+    this.createValueParagraphs(dataArrays, pointIndex);
+    this.valueParagraphs.textContent = dataArrays[1][pointIndex];
     const date = new Date(timestamp * 1000);
     const yy = date.getFullYear();
     const mm = monthNames[date.getMonth() - 1];
@@ -204,6 +208,26 @@ class HoverInfo {
     const MM = this.padWithZero(date.getMinutes());
     const SS = this.padWithZero(date.getSeconds());
     this.timeParagraph.textContent = `${yy} ${mm} ${dd} ${HH}:${MM}:${SS}`;
+  }
+
+  createValueParagraphs(dataArrays, pointIndex) {
+    if (this.valueParagraphs.length !== dataArrays.length) {
+      this.valueParagraphs.forEach((p) => this.topElement.removeChild(p));
+      this.valueParagraphs = [];
+
+      for (let i = 0; i < dataArrays.length; i++) {
+        this.valueParagraphs.push(document.createElement("span"));
+        this.topElement.appendChild(this.valueParagraphs[i]);
+      }
+    }
+
+    this.valueParagraphs.forEach((p) => {
+      p.setAttribute("style", "line-height: 1.25rem; color: #F8F8FA;");
+    });
+
+    for (let i = 0; i < dataArrays.length; i++) {
+      this.valueParagraphs[i].textContent = dataArrays[i][pointIndex];
+    }
   }
 
   setPosition(x, y, parentWidth, parentHeight) {
@@ -315,7 +339,8 @@ class LineGraph {
       const screenY = this.getClosestPointScreenSpaceY(pointIndex);
 
       this.hoverInfo.updateInformation(
-        this.valueArray[0][pointIndex],
+        this.valueArray,
+        pointIndex,
         this.times[pointIndex],
         screenX,
         screenY,
