@@ -241,7 +241,7 @@ class HoverInfo {
 }
 
 class LineGraph {
-  constructor(values, times, name) {
+  constructor(valueArray, times, names) {
     this.topElement = document.createElement("div");
     this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
     this.hoverInfo = new HoverInfo();
@@ -250,8 +250,8 @@ class LineGraph {
     this.topElement.appendChild(this.hoverInfo.topElement);
 
     this.times = times;
-    this.values = values;
-    this.name = name;
+    this.valueArray = valueArray;
+    this.names = names;
 
     this.rulers = [];
     this.rulerCaptions = [];
@@ -274,15 +274,22 @@ class LineGraph {
       this.svg.appendChild(cap);
     });
 
-    this.polyline = document.createElementNS(SVG_HTML_NAMESPACE, "polyline");
+    this.polylines = [];
+    for (let i = 0; i < this.valueArray.length; i++) {
+      this.polylines.push(
+        document.createElementNS(SVG_HTML_NAMESPACE, "polyline")
+      );
+    }
 
-    setAttributes(this.polyline, {
-      id: "data",
-      stroke: `${this.generateColorForLine()}`,
-      "stroke-width": "2px",
-      fill: "none",
+    this.polylines.forEach((polyline, index) => {
+      setAttributes(polyline, {
+        id: "data",
+        stroke: `${this.generateColorForLine(index)}`,
+        "stroke-width": "2px",
+        fill: "none",
+      });
+      this.svg.appendChild(polyline);
     });
-    this.svg.appendChild(this.polyline);
 
     this.hoverLine = document.createElementNS(SVG_HTML_NAMESPACE, "line");
     this.hoverCircle = document.createElementNS(SVG_HTML_NAMESPACE, "circle");
@@ -306,14 +313,16 @@ class LineGraph {
       const pointIndex = this.getClosestPointIndex(e.offsetX);
       const screenX = this.getClosestPointScreenSpaceX(pointIndex);
       const screenY = this.getClosestPointScreenSpaceY(pointIndex);
+
       this.hoverInfo.updateInformation(
-        this.values[pointIndex],
+        this.valueArray[0][pointIndex],
         this.times[pointIndex],
         screenX,
         screenY,
         this.width,
         this.height
       );
+
       setAttributes(this.hoverLine, {
         x1: `${screenX}`,
         y1: "0",
@@ -344,9 +353,9 @@ class LineGraph {
   }
 
   // TODO(radomski): Multilines, add nonce
-  generateColorForLine() {
+  generateColorForLine(index) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(this.name);
+    const data = encoder.encode(this.names[index]);
     // TODO(radomski): This really should be awaited
     crypto.subtle.digest("SHA-256", data);
     const random = data[0] | (data[1] << 8) | (data[2] << 16);
@@ -382,58 +391,67 @@ class LineGraph {
     this.paddingRoom = this.paddingSpace * 2;
     this.paddedHeight = this.height - this.paddingRoom;
 
-    if (this.values.length === 0) {
-      return 0;
-    }
+    console.log(this.valueArray.length);
+    const [min, max] = this.valueArray
+      .map((values) => this.getMinMax(values))
+      .reduce(([lmin, lmax], [rmin, rmax]) => [
+        Math.min(lmin, rmin),
+        Math.max(lmax, rmax),
+      ]);
 
-    const [min, max] = this.getMinMax(this.values);
     this.valueMin = min;
     this.valueMax = max;
 
-    this.horizontalScaling = this.width / (this.values.length - 1);
-    const pointsAttribValue = this.values
-      .map(
-        (val, i) =>
-          `${i * this.horizontalScaling}, ${this.toScreenSpaceHeight(val)}`
-      )
-      .join(" ");
+    this.valueArray.forEach((values, index) => {
+      if (values.length === 0) {
+        return 0;
+      }
 
-    this.polyline.setAttribute("points", pointsAttribValue);
+      this.horizontalScaling = this.width / (values.length - 1);
+      const pointsAttribValue = values
+        .map(
+          (val, i) =>
+            `${i * this.horizontalScaling}, ${this.toScreenSpaceHeight(val)}`
+        )
+        .join(" ");
 
-    //
-    // Rulers and their captions
-    //
-    this.rulers.forEach((r, i) => {
-      const denom = this.rulers.length - 1;
-      const y = i * (this.paddedHeight / denom) + this.paddingSpace;
-      setAttributes(r, {
-        x1: "0",
-        y1: `${y}`,
-        x2: `${this.width}`,
-        y2: `${y}`,
+      this.polylines[index].setAttribute("points", pointsAttribValue);
+
+      //
+      // Rulers and their captions
+      //
+      this.rulers.forEach((r, i) => {
+        const denom = this.rulers.length - 1;
+        const y = i * (this.paddedHeight / denom) + this.paddingSpace;
+        setAttributes(r, {
+          x1: "0",
+          y1: `${y}`,
+          x2: `${this.width}`,
+          y2: `${y}`,
+        });
       });
-    });
 
-    this.rulerCaptions.forEach((cap, i) => {
-      const denom1 = this.rulerCaptions.length - 1;
-      const denom2 =
-        (this.valueMax - this.valueMin) / (this.rulerCaptions.length - 1);
-      const y =
-        (this.rulerCaptions.length - i - 1) * (this.paddedHeight / denom1) +
-        this.paddingSpace;
+      this.rulerCaptions.forEach((cap, i) => {
+        const denom1 = this.rulerCaptions.length - 1;
+        const denom2 =
+          (this.valueMax - this.valueMin) / (this.rulerCaptions.length - 1);
+        const y =
+          (this.rulerCaptions.length - i - 1) * (this.paddedHeight / denom1) +
+          this.paddingSpace;
 
-      const rulerValue = i * denom2 + this.valueMin;
-      cap.textContent = `${rulerValue.toFixed(2)}`;
-      cap.setAttribute("x", "0");
-      cap.setAttribute("y", `${y - 2}`);
+        const rulerValue = i * denom2 + this.valueMin;
+        cap.textContent = `${rulerValue.toFixed(2)}`;
+        cap.setAttribute("x", "0");
+        cap.setAttribute("y", `${y - 2}`);
+      });
     });
   }
 
   getClosestPointIndex(x) {
     const i = Math.floor(x / this.horizontalScaling);
 
-    if (i >= this.values.length) {
-      return this.values.length - 1;
+    if (i >= this.valueArray[0].length) {
+      return this.valueArray[0].length - 1;
     }
 
     const dist = [i, i + 1].map((v) =>
@@ -447,18 +465,18 @@ class LineGraph {
   }
 
   getClosestPointScreenSpaceY(pointIndex) {
-    return this.toScreenSpaceHeight(this.values[pointIndex]);
+    return this.toScreenSpaceHeight(this.valueArray[0][pointIndex]);
   }
 }
 
 const insertDiv = document.getElementById("global_insert_space");
 
-function createLineGraphForContainer(container, timeContainer, halfSize) {
-  const graph = new LineGraph(
-    container.elements,
-    timeContainer.elements,
-    container.name
-  );
+function createLineGraphForContainer(containers, timeContainer, halfSize) {
+  const elements = [];
+  const names = [];
+  containers.forEach((c) => elements.push(c.elements));
+  containers.forEach((c) => names.push(c.elements));
+  const graph = new LineGraph(elements, timeContainer.elements, names);
   wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, graph.getTopElement());
   return graph;
 }
@@ -476,32 +494,23 @@ window.onload = async () => {
 
   graphs.push(
     createLineGraphForContainer(
-      containers.filter(
-        (c) => c.name === "Interface enp1s0 Received [bytes]"
-      )[0],
-      timeContainer,
-      true
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter(
-        (c) => c.name === "Interface enp1s0 Transmitted [bytes]"
-      )[0],
-      timeContainer,
-      true
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name === "Unix timestamp")[0],
+      containers.filter((c) => c.name.includes("Interface enp1s0")),
       timeContainer,
       false
     )
   );
   graphs.push(
     createLineGraphForContainer(
-      containers.filter((c) => c.name === "Used memory [MB]")[0],
+      containers.filter(
+        (c) => c.name === "Used memory [MB]" || c.name === "Used swap [MB]"
+      ),
+      timeContainer,
+      false
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name.startsWith("coretemp Core")),
       timeContainer,
       false
     )
