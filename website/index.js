@@ -13,11 +13,11 @@ function setAttributes(elem, attrs) {
 function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
   const div = document.createElement("div");
   if (isHalfSize) {
-    div.setAttribute("class", "half_graph");
-    div.setAttribute("style", "position: relative;");
+    div.setAttribute("class", "");
+    div.setAttribute("style", "position: relative; width: 50%;");
   } else {
-    div.setAttribute("class", "graph");
-    div.setAttribute("style", "position: relative;");
+    div.setAttribute("class", "");
+    div.setAttribute("style", "position: relative; width: 100%;");
   }
 
   div.appendChild(svg);
@@ -266,13 +266,40 @@ class HoverInfo {
   }
 }
 
-class LineGraph {
-  constructor(valueArray, times, names) {
+class Title {
+  constructor(titleText) {
+    this.text = titleText;
+
+    this.textElement = document.createElement("span");
+    this.textElement.setAttribute("style", "font: 2rem serif; color: #F8F8FA");
+    this.textElement.textContent = titleText;
+
     this.topElement = document.createElement("div");
+    this.topElement.setAttribute(
+      "style",
+      "text-align: right; padding-right: 0.5rem;"
+    );
+    this.topElement.appendChild(this.textElement);
+  }
+
+  getElement() {
+    return this.topElement;
+  }
+}
+
+class LineGraph {
+  constructor(valueArray, times, names, title) {
+    this.topElement = document.createElement("div");
+    this.title = new Title(title);
     this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
     this.hoverInfo = new HoverInfo();
 
-    this.topElement.appendChild(this.svg);
+    this.svgWrapper = document.createElement("div");
+    this.svgWrapper.setAttribute("class", "graph");
+    this.svgWrapper.appendChild(this.svg);
+
+    this.topElement.appendChild(this.title.getElement());
+    this.topElement.appendChild(this.svgWrapper);
     this.topElement.appendChild(this.hoverInfo.topElement);
 
     this.times = times;
@@ -498,12 +525,17 @@ class LineGraph {
 
 const insertDiv = document.getElementById("global_insert_space");
 
-function createLineGraphForContainer(containers, timeContainer, halfSize) {
+function createLineGraphForContainer(
+  containers,
+  timeContainer,
+  halfSize,
+  title
+) {
   const elements = [];
   const names = [];
   containers.forEach((c) => elements.push(c.elements));
   containers.forEach((c) => names.push(c.name));
-  const graph = new LineGraph(elements, timeContainer.elements, names);
+  const graph = new LineGraph(elements, timeContainer.elements, names, title);
   wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, graph.getTopElement());
   return graph;
 }
@@ -523,7 +555,8 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("Interface enp1s0")),
       timeContainer,
-      false
+      false,
+      "Network usage"
     )
   );
   graphs.push(
@@ -532,14 +565,16 @@ window.onload = async () => {
         (c) => c.name === "Used memory [MB]" || c.name === "Used swap [MB]"
       ),
       timeContainer,
-      false
+      false,
+      "RAM usage"
     )
   );
   graphs.push(
     createLineGraphForContainer(
       containers.filter((c) => c.name.startsWith("coretemp Core")),
       timeContainer,
-      false
+      false,
+      "CPU temperature"
     )
   );
   graphs.forEach((g) => g.draw());
