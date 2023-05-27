@@ -1,5 +1,6 @@
 - Assign titles to graphs.
 - Finalize CSS styling.
+- When there is a lot of values, create a rolling window with Math.max to create a approximation of the shape with fewer points
 
 // From main.rs
 - gzip - https://github.com/adamkewley/libdeflater
