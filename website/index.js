@@ -312,7 +312,10 @@ class TitleAndLegend {
     this.textElement.textContent = titleText;
 
     this.topElement = document.createElement("div");
-    this.topElement.setAttribute("style", "display: flex");
+    this.topElement.setAttribute(
+      "style",
+      "display: flex; justify-content: space-between; height: 3rem;"
+    );
     this.spanDiv = document.createElement("div");
     this.spanDiv.setAttribute(
       "style",
@@ -320,9 +323,16 @@ class TitleAndLegend {
     );
     this.spanDiv.appendChild(this.textElement);
 
+    this.legendeDiv = document.createElement("div");
+    this.legendeDiv.setAttribute(
+      "style",
+      "display: flex; flex-direction: column; flex-wrap: wrap;"
+    );
     for (const legendeName of this.legendeNames) {
-      this.topElement.appendChild(this.createLegendeElement(legendeName));
+      this.legendeDiv.appendChild(this.createLegendeElement(legendeName));
     }
+
+    this.topElement.appendChild(this.legendeDiv);
     this.topElement.appendChild(this.spanDiv);
   }
 
@@ -333,6 +343,8 @@ class TitleAndLegend {
     const nameText = document.createElement("span");
     nameText.textContent = legendeName;
     nameText.setAttribute("style", "color: #F8F8FA;");
+
+    div.setAttribute("style", "padding-left: 0.5rem; padding-right: 0.5rem;");
 
     setAttributes(svg, {
       width: "20",
