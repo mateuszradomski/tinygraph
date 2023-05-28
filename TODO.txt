@@ -1,4 +1,1 @@
 - Finalize CSS styling.
-
-// From main.rs
-- gzip - https://github.com/adamkewley/libdeflater
