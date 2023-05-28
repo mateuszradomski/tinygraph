@@ -211,7 +211,7 @@ class HoverInfo {
     const yy = date.getFullYear();
     const mm = monthNames[date.getMonth()];
     const dd = this.padWithZero(date.getDate());
-    const HH = this.padWithZero(date.getUTCHours());
+    const HH = this.padWithZero(date.getHours());
     const MM = this.padWithZero(date.getMinutes());
     const SS = this.padWithZero(date.getSeconds());
     this.timeParagraph.textContent = `${yy} ${mm} ${dd} ${HH}:${MM}:${SS}`;
@@ -462,10 +462,12 @@ class LineGraph {
       const screenX = this.getClosestPointScreenSpaceX(pointIndex);
       const screenY = this.getClosestPointScreenSpaceYAverage(pointIndex);
 
+      const scaling = Math.floor(this.valueArray[0].length / this.width);
+
       this.hoverInfo.updateInformation(
         this.approximatedValues,
         pointIndex,
-        this.times[pointIndex],
+        this.times[scaling * pointIndex],
         this.names,
         screenX,
         screenY,
