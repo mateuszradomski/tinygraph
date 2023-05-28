@@ -209,9 +209,9 @@ class HoverInfo {
     this.valueParagraphs.textContent = dataArrays[1][pointIndex];
     const date = new Date(timestamp * 1000);
     const yy = date.getFullYear();
-    const mm = monthNames[date.getMonth() - 1];
-    const dd = this.padWithZero(date.getDay());
-    const HH = this.padWithZero(date.getHours());
+    const mm = monthNames[date.getMonth()];
+    const dd = this.padWithZero(date.getDate());
+    const HH = this.padWithZero(date.getUTCHours());
     const MM = this.padWithZero(date.getMinutes());
     const SS = this.padWithZero(date.getSeconds());
     this.timeParagraph.textContent = `${yy} ${mm} ${dd} ${HH}:${MM}:${SS}`;
