@@ -56,7 +56,7 @@ async function decompressToByteArray(compressedData) {
 }
 
 async function fetchAndParseTGPH() {
-  const response = await fetch("data.tgph.gz");
+  const response = await fetch("data.tgph.gz", { cache: "no-store" });
   const blob = await decompressToByteArray(await response.blob());
   const bytes = blob.buffer;
   const dataView = new DataView(bytes);
