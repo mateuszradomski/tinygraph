@@ -14,10 +14,10 @@ function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
   const div = document.createElement("div");
   if (isHalfSize) {
     div.setAttribute("class", "");
-    div.setAttribute("style", "position: relative; width: 50%;");
+    div.setAttribute("style", "position: relative; min-width: 500px; width: 24%; border: solid grey;");
   } else {
     div.setAttribute("class", "");
-    div.setAttribute("style", "position: relative; width: 100%;");
+    div.setAttribute("style", "position: relative; min-width: 500px; width: 49%; border: solid grey;");
   }
 
   div.appendChild(svg);
