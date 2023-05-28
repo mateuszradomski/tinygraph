@@ -14,10 +14,16 @@ function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
   const div = document.createElement("div");
   if (isHalfSize) {
     div.setAttribute("class", "");
-    div.setAttribute("style", "position: relative; min-width: 500px; width: 24%; border: solid grey;");
+    div.setAttribute(
+      "style",
+      "position: relative; min-width: 500px; width: 24%; border: solid grey;"
+    );
   } else {
     div.setAttribute("class", "");
-    div.setAttribute("style", "position: relative; min-width: 500px; width: 49%; border: solid grey;");
+    div.setAttribute(
+      "style",
+      "position: relative; min-width: 500px; width: 49%; border: solid grey;"
+    );
   }
 
   div.appendChild(svg);
@@ -450,7 +456,7 @@ class LineGraph {
       const screenY = this.getClosestPointScreenSpaceY(pointIndex);
 
       this.hoverInfo.updateInformation(
-        this.valueArray,
+        this.approximatedValues,
         pointIndex,
         this.times[pointIndex],
         this.names,
@@ -513,12 +519,30 @@ class LineGraph {
     const bbox = this.svg.getBoundingClientRect();
     this.width = bbox.width;
     this.height = bbox.height;
+
+    this.approximatedValues = this.valueArray.map((arr) => {
+      const scaling = Math.floor(arr.length / this.width);
+      if (scaling === 0) {
+        return arr;
+      } else {
+        const result = [];
+        for (let i = 0; i < arr.length / scaling; i++) {
+          result.push(
+            arr
+              .slice(i * scaling, (i + 1) * scaling)
+              .reduce((l, r) => Math.max(l, r))
+          );
+        }
+        return result;
+      }
+    });
+
     this.verticalPadding = 0.05; // 5%
     this.paddingSpace = this.height * this.verticalPadding;
     this.paddingRoom = this.paddingSpace * 2;
     this.paddedHeight = this.height - this.paddingRoom;
 
-    const [min, max] = this.valueArray
+    const [min, max] = this.approximatedValues
       .map((values) => this.getMinMax(values))
       .reduce(([lmin, lmax], [rmin, rmax]) => [
         Math.min(lmin, rmin),
@@ -528,7 +552,7 @@ class LineGraph {
     this.valueMin = min;
     this.valueMax = max;
 
-    this.valueArray.forEach((values, index) => {
+    this.approximatedValues.forEach((values, index) => {
       if (values.length === 0) {
         return 0;
       }
@@ -576,8 +600,8 @@ class LineGraph {
   getClosestPointIndex(x) {
     const i = Math.floor(x / this.horizontalScaling);
 
-    if (i >= this.valueArray[0].length) {
-      return this.valueArray[0].length - 1;
+    if (i >= this.approximatedValues[0].length) {
+      return this.approximatedValues[0].length - 1;
     }
 
     const dist = [i, i + 1].map((v) =>
@@ -591,7 +615,7 @@ class LineGraph {
   }
 
   getClosestPointScreenSpaceY(pointIndex) {
-    return this.toScreenSpaceHeight(this.valueArray[0][pointIndex]);
+    return this.toScreenSpaceHeight(this.approximatedValues[0][pointIndex]);
   }
 }
 
