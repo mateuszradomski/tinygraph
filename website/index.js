@@ -319,14 +319,14 @@ class TitleAndLegend {
     this.spanDiv = document.createElement("div");
     this.spanDiv.setAttribute(
       "style",
-      "text-align: right; padding-right: 0.5rem;"
+      "text-align: right; padding-right: 0.5rem; flex-shrink: 0;"
     );
     this.spanDiv.appendChild(this.textElement);
 
     this.legendeDiv = document.createElement("div");
     this.legendeDiv.setAttribute(
       "style",
-      "display: flex; flex-direction: column; flex-wrap: wrap;"
+      "display: flex; flex-wrap: wrap;"
     );
     for (const legendeName of this.legendeNames) {
       this.legendeDiv.appendChild(this.createLegendeElement(legendeName));
