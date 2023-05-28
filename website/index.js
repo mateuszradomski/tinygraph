@@ -324,10 +324,7 @@ class TitleAndLegend {
     this.spanDiv.appendChild(this.textElement);
 
     this.legendeDiv = document.createElement("div");
-    this.legendeDiv.setAttribute(
-      "style",
-      "display: flex; flex-wrap: wrap;"
-    );
+    this.legendeDiv.setAttribute("style", "display: flex; flex-wrap: wrap;");
     for (const legendeName of this.legendeNames) {
       this.legendeDiv.appendChild(this.createLegendeElement(legendeName));
     }
