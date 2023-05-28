@@ -433,27 +433,34 @@ class LineGraph {
     });
 
     this.hoverLine = document.createElementNS(SVG_HTML_NAMESPACE, "line");
-    this.hoverCircle = document.createElementNS(SVG_HTML_NAMESPACE, "circle");
+    this.hoverCircles = [];
+    for (let i = 0; i < this.valueArray.length; i++) {
+      this.hoverCircles.push(
+        document.createElementNS(SVG_HTML_NAMESPACE, "circle")
+      );
+    }
 
     setAttributes(this.hoverLine, {
       stroke: "white",
       class: "hidden",
       "stroke-width": "2px",
     });
-    setAttributes(this.hoverCircle, {
-      stroke: "white",
-      class: "hidden",
-      "stroke-width": "2px",
-      r: "3",
+    this.hoverCircles.forEach((circle) => {
+      setAttributes(circle, {
+        stroke: "white",
+        class: "hidden",
+        "stroke-width": "2px",
+        r: "3",
+      });
     });
 
     this.svg.appendChild(this.hoverLine);
-    this.svg.appendChild(this.hoverCircle);
+    this.hoverCircles.forEach((circle) => this.svg.appendChild(circle));
 
     this.svg.addEventListener("mousemove", (e) => {
       const pointIndex = this.getClosestPointIndex(e.offsetX);
       const screenX = this.getClosestPointScreenSpaceX(pointIndex);
-      const screenY = this.getClosestPointScreenSpaceY(pointIndex);
+      const screenY = this.getClosestPointScreenSpaceYAverage(pointIndex);
 
       this.hoverInfo.updateInformation(
         this.approximatedValues,
@@ -472,21 +479,25 @@ class LineGraph {
         x2: `${screenX}`,
         y2: "600",
       });
-      setAttributes(this.hoverCircle, {
-        cx: `${screenX}`,
-        cy: `${screenY}`,
-      });
+      this.hoverCircles.forEach((circle, index) =>
+        setAttributes(circle, {
+          cx: `${screenX}`,
+          cy: `${this.getClosestPointScreenSpaceY(index, pointIndex)}`,
+        })
+      );
     });
 
     this.svg.addEventListener("mouseenter", (_) => {
       this.hoverLine.setAttribute("class", "");
-      this.hoverCircle.setAttribute("class", "");
+      this.hoverCircles.forEach((circle) => circle.setAttribute("class", ""));
       this.hoverInfo.show();
     });
 
     this.svg.addEventListener("mouseleave", (_) => {
       this.hoverLine.setAttribute("class", "hidden");
-      this.hoverCircle.setAttribute("class", "hidden");
+      this.hoverCircles.forEach((circle) =>
+        circle.setAttribute("class", "hidden")
+      );
       this.hoverInfo.hide();
     });
   }
@@ -614,8 +625,20 @@ class LineGraph {
     return pointIndex * this.horizontalScaling;
   }
 
-  getClosestPointScreenSpaceY(pointIndex) {
-    return this.toScreenSpaceHeight(this.approximatedValues[0][pointIndex]);
+  getClosestPointScreenSpaceY(valueIndex, pointIndex) {
+    return this.toScreenSpaceHeight(
+      this.approximatedValues[valueIndex][pointIndex]
+    );
+  }
+
+  getClosestPointScreenSpaceYAverage(pointIndex) {
+    const numerator = this.approximatedValues
+      .map((val) => {
+        return this.toScreenSpaceHeight(val[pointIndex]);
+      })
+      .reduce((l, r) => l + r);
+
+    return numerator / this.approximatedValues.length;
   }
 }
 
