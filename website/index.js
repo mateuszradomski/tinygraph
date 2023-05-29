@@ -159,6 +159,10 @@ const monthNames = [
   "Dec",
 ];
 
+function ifFloatNarrow(val) {
+  return n % 1 === 0 ? val : val.toFixed(2);
+}
+
 class HoverInfo {
   constructor() {
     this.topElement = document.createElement("div");
@@ -221,7 +225,7 @@ class HoverInfo {
     });
 
     for (let i = 0; i < dataArrays.length; i++) {
-      const text = `${names[i]} : ${dataArrays[i][pointIndex]}`;
+      const text = `${names[i]} : ${ifFloatNarrow(dataArrays[i][pointIndex])}`;
       this.valueParagraphs[i].textContent = text;
     }
   }
