@@ -5,7 +5,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt};
+use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt, CpuExt};
 
 use std::io::{stdout, Write};
 
@@ -134,6 +134,10 @@ fn main() -> Result<(), std::io::Error> {
         }
 
         tgph.append(sys.cpus().len() as u32, "CPU Count");
+
+        for (i, cpu) in sys.cpus().iter().enumerate() {
+            tgph.append(cpu.cpu_usage(), &format!("CPU {} Usage [%]", i))
+        }
 
         tgph.append(
             (sys.total_memory() / 1024 / 1024) as u32,

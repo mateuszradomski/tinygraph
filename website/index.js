@@ -671,6 +671,22 @@ window.onload = async () => {
   );
   graphs.push(
     createLineGraphForContainer(
+      containers.filter((c) => c.name.startsWith("coretemp Core")),
+      timeContainer,
+      "CPU Temperature"
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter(
+        (c) => c.name.startsWith("CPU") && c.name.includes("Usage")
+      ),
+      timeContainer,
+      "CPU Usage"
+    )
+  );
+  graphs.push(
+    createLineGraphForContainer(
       containers.filter((c) => c.name.includes("mmcblk0")),
       timeContainer,
       "Internal disk usage"
@@ -688,13 +704,6 @@ window.onload = async () => {
       containers.filter((c) => c.name.includes("sdb")),
       timeContainer,
       "Disk [sdb] usage"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.startsWith("coretemp Core")),
-      timeContainer,
-      "CPU temperature"
     )
   );
   graphs.forEach((g) => g.draw());
