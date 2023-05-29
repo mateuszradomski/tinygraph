@@ -10,21 +10,9 @@ function setAttributes(elem, attrs) {
   }
 }
 
-function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
+function wrapSvgAndAppendToGlobalContainer(insertDiv, svg) {
   const div = document.createElement("div");
-  if (isHalfSize) {
-    div.setAttribute("class", "");
-    div.setAttribute(
-      "style",
-      "position: relative; min-width: 500px; flex-basis: 24%; flex-grow: 1; border: solid grey;"
-    );
-  } else {
-    div.setAttribute("class", "");
-    div.setAttribute(
-      "style",
-      "position: relative; min-width: 500px; flex-basis: 49%; flex-grow: 1; border: solid grey;"
-    );
-  }
+  div.setAttribute("class", "graph");
 
   div.appendChild(svg);
   insertDiv.appendChild(div);
@@ -383,7 +371,7 @@ class LineGraph {
     this.hoverInfo = new HoverInfo();
 
     this.svgWrapper = document.createElement("div");
-    this.svgWrapper.setAttribute("class", "graph");
+    this.svgWrapper.setAttribute("class", "svg_wrapper");
     this.svgWrapper.appendChild(this.svg);
 
     this.topElement.appendChild(this.title.getElement());
@@ -646,18 +634,13 @@ class LineGraph {
 
 const insertDiv = document.getElementById("global_insert_space");
 
-function createLineGraphForContainer(
-  containers,
-  timeContainer,
-  halfSize,
-  title
-) {
+function createLineGraphForContainer(containers, timeContainer, title) {
   const elements = [];
   const names = [];
   containers.forEach((c) => elements.push(c.elements));
   containers.forEach((c) => names.push(c.name));
   const graph = new LineGraph(elements, timeContainer.elements, names, title);
-  wrapSvgAndAppendToGlobalContainer(insertDiv, halfSize, graph.getTopElement());
+  wrapSvgAndAppendToGlobalContainer(insertDiv, graph.getTopElement());
   return graph;
 }
 
@@ -676,7 +659,6 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("Interface enp1s0")),
       timeContainer,
-      false,
       "Network usage"
     )
   );
@@ -684,7 +666,6 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("memory")),
       timeContainer,
-      false,
       "RAM usage"
     )
   );
@@ -692,7 +673,6 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("mmcblk0")),
       timeContainer,
-      false,
       "Internal disk usage"
     )
   );
@@ -700,7 +680,6 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("sda")),
       timeContainer,
-      false,
       "Disk [sda] usage"
     )
   );
@@ -708,7 +687,6 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("sdb")),
       timeContainer,
-      false,
       "Disk [sdb] usage"
     )
   );
@@ -716,7 +694,6 @@ window.onload = async () => {
     createLineGraphForContainer(
       containers.filter((c) => c.name.startsWith("coretemp Core")),
       timeContainer,
-      false,
       "CPU temperature"
     )
   );

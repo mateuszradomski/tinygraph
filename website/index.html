@@ -13,14 +13,17 @@
         visibility: hidden;
       }
 
-      .graph {
+      .svg_wrapper {
         width: 100%;
         height: 260px;
       }
 
-      .half_graph {
-        width: 500px;
-        height: 260px;
+      .graph {
+        position: relative;
+        min-width: 500px;
+        flex-basis: 49%;
+        flex-grow: 1;
+        border: solid grey;
       }
 
       .full_svgs {
