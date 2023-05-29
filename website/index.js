@@ -160,7 +160,7 @@ const monthNames = [
 ];
 
 function ifFloatNarrow(val) {
-  return n % 1 === 0 ? val : val.toFixed(2);
+  return val % 1 === 0 ? val : val.toFixed(2);
 }
 
 class HoverInfo {
