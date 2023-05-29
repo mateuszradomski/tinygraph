@@ -16,13 +16,13 @@ function wrapSvgAndAppendToGlobalContainer(insertDiv, isHalfSize, svg) {
     div.setAttribute("class", "");
     div.setAttribute(
       "style",
-      "position: relative; min-width: 500px; width: 24%; border: solid grey;"
+      "position: relative; min-width: 500px; flex-basis: 24%; flex-grow: 1; border: solid grey;"
     );
   } else {
     div.setAttribute("class", "");
     div.setAttribute(
       "style",
-      "position: relative; min-width: 500px; width: 49%; border: solid grey;"
+      "position: relative; min-width: 500px; flex-basis: 49%; flex-grow: 1; border: solid grey;"
     );
   }
 
