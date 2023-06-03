@@ -111,7 +111,7 @@ fn main() -> Result<(), std::io::Error> {
             );
             tgph.append(
                 (disk.available_space() / 1024 / 1024 / 1024) as u32,
-                &format!("Disk {} Avaiable Space [GB]", disk.name().to_str().unwrap()),
+                &format!("Disk {} Available Space [GB]", disk.name().to_str().unwrap()),
             );
         }
 
