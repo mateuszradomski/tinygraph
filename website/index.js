@@ -221,7 +221,7 @@ class HoverInfo {
     }
 
     this.valueParagraphs.forEach((p) => {
-      p.setAttribute("style", "line-height: 1.25rem; color: #F8F8FA;");
+      p.setAttribute("style", "line-height: 1.25rem; color: #F8F8FA; text-align: left;");
     });
 
     for (let i = 0; i < dataArrays.length; i++) {
