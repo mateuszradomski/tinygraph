@@ -654,7 +654,6 @@ let graphs = [];
 window.onload = async () => {
   containers = await fetchAndParseTGPH();
 
-  console.log(containers);
   const timeContainer = containers.filter(
     (c) => c.name === "Unix timestamp"
   )[0];
