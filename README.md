@@ -70,3 +70,26 @@ Encoding of `length`:
 | >= 0 && <= 254     | 1          | uint8_t                                 |
 | >= 255 && <= 65536 | 3          | 0xff followed by the number as uint16_t |
 ```
+# Starting gather automatically
+
+For that purpose use systemd's services.
+In `/etc/systemd/system/` create a file `tinygraph.service` with the following content.
+
+```
+[Unit]
+Description=Tinygraph Data Colletion
+After=syslog.target
+After=network.target
+
+[Service]
+RestartSec=2s
+Type=simple
+User=YOUR_USER
+Group=YOUR_GROUP
+WorkingDirectory=YOUR_DIRECTORY
+ExecStart=PATH_TO_TINYGRAPH/tinygraph OUTPUT_NAME SAMPLE_COUNT PERIOD
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
