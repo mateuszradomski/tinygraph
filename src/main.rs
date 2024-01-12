@@ -1,11 +1,13 @@
 use std::{
     fs::File,
     io::{Cursor, Read},
+    net::TcpStream,
     thread::sleep,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use sysinfo::{ComponentExt, DiskExt, NetworkExt, System, SystemExt, CpuExt};
+use byteorder::{LittleEndian, ReadBytesExt};
+use sysinfo::{ComponentExt, CpuExt, DiskExt, NetworkExt, System, SystemExt};
 
 use std::io::{stdout, Write};
 
@@ -56,6 +58,32 @@ fn decompress<R: Read>(stream: &mut R) -> Result<Vec<u8>, std::io::Error> {
     outbuf.resize(isize, 0);
     decompressor.gzip_decompress(&gz_data, &mut outbuf).unwrap();
     Ok(outbuf)
+}
+
+struct CO2Readings {
+    timings: Vec<u32>,
+    readings: Vec<u32>,
+}
+
+fn fetch_co2_data_from_sensor() -> Result<CO2Readings, std::io::Error> {
+    let mut stream = TcpStream::connect("192.168.1.15:6969")?;
+
+    let mut buffer: Vec<u8> = Default::default();
+    let bytes_read = stream.read_to_end(&mut buffer)?;
+    let mut cursor = Cursor::new(buffer);
+
+    let latest_time = cursor.read_u64::<LittleEndian>()?;
+    let read_interval = cursor.read_u64::<LittleEndian>()?;
+    let reading_count = cursor.read_u16::<LittleEndian>()?;
+
+    let mut timings: Vec<u32> = Default::default();
+    let mut readings: Vec<u32> = Default::default();
+    for i in 0..reading_count {
+        timings.push((latest_time - read_interval * (reading_count - i - 1) as u64) as u32);
+        readings.push(cursor.read_u16::<LittleEndian>()? as u32);
+    }
+
+    Ok(CO2Readings { timings, readings })
 }
 
 fn main() -> Result<(), std::io::Error> {
@@ -111,7 +139,10 @@ fn main() -> Result<(), std::io::Error> {
             );
             tgph.append(
                 (disk.available_space() / 1024 / 1024 / 1024) as u32,
-                &format!("Disk {} Available Space [GB]", disk.name().to_str().unwrap()),
+                &format!(
+                    "Disk {} Available Space [GB]",
+                    disk.name().to_str().unwrap()
+                ),
             );
         }
 
@@ -165,6 +196,11 @@ fn main() -> Result<(), std::io::Error> {
                 .to_string(),
             "Hostname",
         );
+
+        let co2_data = fetch_co2_data_from_sensor()?;
+
+        tgph.replace(co2_data.timings, "Unix timestamp CO2");
+        tgph.replace(co2_data.readings, "CO2 Concentration [ppm]");
 
         let mut output_buffer = Vec::new();
         tgph.serialize_into(&mut output_buffer).unwrap();

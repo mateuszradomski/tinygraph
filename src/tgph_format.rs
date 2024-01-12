@@ -137,12 +137,28 @@ impl TGPH {
         Ok(result)
     }
 
+    pub fn remove_container(&mut self, name: &str) {
+        match self.containers.iter_mut().position(|c| c.name == name) {
+            Some(index) => {
+                self.containers.remove(index);
+            }
+            None => {}
+        }
+    }
+
     pub fn add_container(&mut self, container: TGPHContainer) {
         self.containers.push(container);
     }
 
     pub fn append<T: BaseContainerElementType>(&mut self, data: T, name: &str) {
         data.push_element(self, name);
+    }
+
+    pub fn replace<T: BaseContainerElementType>(&mut self, data: Vec<T>, name: &str) {
+        self.remove_container(name);
+        for elem in data {
+            self.append(elem, name);
+        }
     }
 }
 

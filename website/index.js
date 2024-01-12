@@ -198,7 +198,7 @@ class HoverInfo {
   ) {
     this.setPosition(x, y, parentWidth, parentHeight);
     this.createValueParagraphs(dataArrays, pointIndex, names);
-    this.valueParagraphs.textContent = dataArrays[1][pointIndex];
+    this.valueParagraphs.textContent = dataArrays[0][pointIndex];
     const date = new Date(timestamp * 1000);
     const yy = date.getFullYear();
     const mm = monthNames[date.getMonth()];
@@ -658,6 +658,18 @@ window.onload = async () => {
     (c) => c.name === "Unix timestamp"
   )[0];
 
+  const co2TimeContainer = containers.filter(
+    (c) => c.name === "Unix timestamp CO2"
+  )[0];
+
+
+  graphs.push(
+    createLineGraphForContainer(
+      containers.filter((c) => c.name.includes("CO2 Concentration [ppm]")),
+      co2TimeContainer,
+      "Air quality"
+    )
+  );
   graphs.push(
     createLineGraphForContainer(
       containers.filter((c) => c.name.includes("Interface enp1s0")),
