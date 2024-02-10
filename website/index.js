@@ -1,22 +1,21 @@
+const TGPH_FORMAT_MAGIC = 0x48504754;
+const TGPH_FORMAT_VERSION = 1;
 const SVG_HTML_NAMESPACE = "http://www.w3.org/2000/svg";
 
-function lerp(k0, k1, t) {
-  return k0 + t * (k1 - k0);
-}
-
-function setAttributes(elem, attrs) {
-  for (const key in attrs) {
-    elem.setAttribute(key, attrs[key]);
-  }
-}
-
-function wrapSvgAndAppendToGlobalContainer(insertDiv, svg) {
-  const div = document.createElement("div");
-  div.setAttribute("class", "graph");
-
-  div.appendChild(svg);
-  insertDiv.appendChild(div);
-}
+const SHORT_MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 async function decompressToByteArray(compressedData) {
   const ds = new DecompressionStream("gzip");
@@ -43,121 +42,163 @@ async function decompressToByteArray(compressedData) {
   return concatenatedChunks;
 }
 
-async function fetchAndParseTGPH() {
+async function getContainerData() {
   const response = await fetch("data.tgph.gz", { cache: "no-store" });
   const blob = await decompressToByteArray(await response.blob());
-  const bytes = blob.buffer;
-  const dataView = new DataView(bytes);
+  return blob.buffer;
+}
 
-  const parser = {
-    bytes: bytes,
-    dataView: dataView,
-    offset: 0,
+class TGPHFormatDecoder {
+  constructor(bytes) {
+    this.bytes = bytes;
+    this.dataView = new DataView(bytes);
+    this.offset = 0;
+  }
 
-    readF32() {
-      const res = this.dataView.getFloat32(this.offset, true);
-      this.offset += 4;
-      return res;
-    },
+  readF32() {
+    const res = this.dataView.getFloat32(this.offset, true);
+    this.offset += 4;
+    return res;
+  }
 
-    readU32() {
-      const res = this.dataView.getUint32(this.offset, true);
-      this.offset += 4;
-      return res;
-    },
+  readU32() {
+    const res = this.dataView.getUint32(this.offset, true);
+    this.offset += 4;
+    return res;
+  }
 
-    readU16() {
-      const res = this.dataView.getUint16(this.offset, true);
-      this.offset += 2;
-      return res;
-    },
+  readU16() {
+    const res = this.dataView.getUint16(this.offset, true);
+    this.offset += 2;
+    return res;
+  }
 
-    readU8() {
-      const res = this.dataView.getUint8(this.offset, true);
-      this.offset += 1;
-      return res;
-    },
+  readU8() {
+    const res = this.dataView.getUint8(this.offset, true);
+    this.offset += 1;
+    return res;
+  }
 
-    readString() {
-      let length = this.readU8();
-      if (length === 0xff) {
-        length = this.readU16();
+  readString() {
+    let length = this.readU8();
+    if (length === 0xff) {
+      length = this.readU16();
+    }
+
+    const stringBytes = new Uint8Array(this.bytes, this.offset, length);
+    const decoder = new TextDecoder("utf-8");
+    const string = decoder.decode(stringBytes);
+    this.offset += length;
+    return string;
+  }
+}
+
+function parseContainer(decoder) {
+  const name = decoder.readString();
+  const elementType = decoder.readU8();
+  const elementCount = decoder.readU32();
+
+  const elements = [];
+  switch (elementType) {
+    case 1:
+      for (let j = 0; j < elementCount; j++) {
+        elements.push(decoder.readU32());
       }
+      break;
+    case 2:
+      for (let j = 0; j < elementCount; j++) {
+        elements.push(decoder.readF32());
+      }
+      break;
+    case 3:
+      for (let j = 0; j < elementCount; j++) {
+        elements.push(decoder.readString());
+      }
+      break;
+    default:
+      throw new Error(`Unexpected elementType = ${elementType}`);
+  }
 
-      const stringBytes = new Uint8Array(this.bytes, this.offset, length);
-      const decoder = new TextDecoder("utf-8");
-      const string = decoder.decode(stringBytes);
-      this.offset += length;
-      return string;
-    },
+  return {
+    name,
+    type: elementType,
+    elements,
   };
+}
 
-  const magic = parser.readU32();
-  const version = parser.readU8();
-  const containerCount = parser.readU16();
+function parseTGPH(bytes) {
+  const decoder = new TGPHFormatDecoder(bytes);
 
-  if (magic !== 0x48504754) {
+  const magic = decoder.readU32();
+  const version = decoder.readU8();
+
+  if (magic !== TGPH_FORMAT_MAGIC) {
     throw new Error("Invalid magic at the start of fetched file");
   }
-  if (version !== 1) {
+  if (version !== TGPH_FORMAT_VERSION) {
     throw new Error("Unexpected version in the fetched TGPH file");
   }
 
   let containers = [];
+  const containerCount = decoder.readU16();
   for (let i = 0; i < containerCount; i++) {
-    let name = parser.readString();
-    const elementType = parser.readU8();
-    const elementCount = parser.readU32();
-
-    const elements = [];
-    switch (elementType) {
-      case 1:
-        for (let j = 0; j < elementCount; j++) {
-          elements.push(parser.readU32());
-        }
-        break;
-      case 2:
-        for (let j = 0; j < elementCount; j++) {
-          elements.push(parser.readF32());
-        }
-        break;
-      case 3:
-        for (let j = 0; j < elementCount; j++) {
-          elements.push(parser.readString());
-        }
-        break;
-      default:
-        throw new Error(`Unexpected elementType = ${elementType}`);
-    }
-
-    containers.push({
-      name: name,
-      type: elementType,
-      elements: elements,
-    });
+    containers.push(parseContainer(decoder));
   }
 
   return containers;
 }
 
+function unpackContainers(containers) {
+  return {
+    elements: containers.map((c) => c.elements),
+    names: containers.map((c) => c.name),
+  };
+}
+
+function getContainersNamedLike(name) {
+  return containers.filter((c) => c.name.includes(name));
+}
+
+function getContainerNamedExactly(name) {
+  const matching = containers.filter((c) => c.name === name);
+  if (matching.length !== 1) {
+    throw new Error(`Expected to find exactly one container with name ${name}`);
+  }
+  return matching[0];
+}
+
+function hashString(string) {
+  let hash = 0xcafebabe;
+  for (let i = 0; i < string.length; i++) {
+    hash = (hash * 33) ^ string.charCodeAt(i);
+  }
+  return hash + 0xcafebabe;
+}
+
+function generateColorFromString(name) {
+  const stringAsANumber = hashString(name);
+  return `hsl(${stringAsANumber % 360.0}, 100%, 65%)`;
+}
+
+function setAttributes(elem, attrs) {
+  for (const key in attrs) {
+    elem.setAttribute(key, attrs[key]);
+  }
+}
+
+function wrapSvgAndAppendToGlobalContainer(svg) {
+  const div = document.createElement("div");
+  div.setAttribute("class", "graph");
+
+  div.appendChild(svg);
+
+  const insertDiv = document.getElementById("global_insert_space");
+  insertDiv.appendChild(div);
+}
+
 function convertRemToPixels(rem) {
   return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
-
-const monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 function ifFloatNarrow(val) {
   return val % 1 === 0 ? val : val.toFixed(2);
@@ -172,7 +213,7 @@ class HoverInfo {
 
     this.timeParagraph.setAttribute(
       "style",
-      "line-height: 1.25rem; color: #F8F8FA;"
+      "line-height: 1.25rem; color: #F8F8FA;",
     );
 
     this.topElement.appendChild(this.timeParagraph);
@@ -194,14 +235,14 @@ class HoverInfo {
     x,
     y,
     parentWidth,
-    parentHeight
+    parentHeight,
   ) {
     this.setPosition(x, y, parentWidth, parentHeight);
     this.createValueParagraphs(dataArrays, pointIndex, names);
     this.valueParagraphs.textContent = dataArrays[0][pointIndex];
     const date = new Date(timestamp * 1000);
     const yy = date.getFullYear();
-    const mm = monthNames[date.getMonth()];
+    const mm = SHORT_MONTH_NAMES[date.getMonth()];
     const dd = this.padWithZero(date.getDate());
     const HH = this.padWithZero(date.getHours());
     const MM = this.padWithZero(date.getMinutes());
@@ -221,7 +262,10 @@ class HoverInfo {
     }
 
     this.valueParagraphs.forEach((p) => {
-      p.setAttribute("style", "line-height: 1.25rem; color: #F8F8FA; text-align: left;");
+      p.setAttribute(
+        "style",
+        "line-height: 1.25rem; color: #F8F8FA; text-align: left;",
+      );
     });
 
     for (let i = 0; i < dataArrays.length; i++) {
@@ -255,7 +299,7 @@ class HoverInfo {
 
     this.topElement.setAttribute(
       "style",
-      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; padding-left: 1rem; display: flex; justify-content: center; flex-direction: column; padding-right: 0.6rem;`
+      `${verticalStyle}; ${horizontalStyle}; border-radius: 1rem; background: #424850; z-index: 50; min-height: 5rem; min-width: 10rem; position: absolute; text-align: right; padding-left: 1rem; display: flex; justify-content: center; flex-direction: column; padding-right: 0.6rem;`,
     );
   }
 
@@ -264,45 +308,12 @@ class HoverInfo {
   }
 }
 
-// Very poorly translated from stb_ds.h
-function STBDS_ROTATE_LEFT(val, n) {
-  return val << n;
-}
-
-function STBDS_ROTATE_RIGHT(val, n) {
-  return val >> n;
-}
-
-function hashString(str) {
-  var hash = 0xcafebabe;
-
-  for (let i = 0; i < str.length; i++) {
-    hash += STBDS_ROTATE_LEFT(hash, 9) + str.charCodeAt(i);
-  }
-
-  hash ^= 0xcafebabe;
-  hash = ~hash + (hash << 18);
-  hash ^= STBDS_ROTATE_RIGHT(hash, 31);
-  hash = hash * 21;
-  hash ^= STBDS_ROTATE_RIGHT(hash, 11);
-  hash += hash << 6;
-  hash ^= STBDS_ROTATE_RIGHT(hash, 22);
-
-  return hash + 0xcafebabe;
-}
-
-// TODO(radomski): Multilines, add nonce
-function generateColorFromString(name) {
-  const random = hashString(name);
-  return `hsl(${random % 360.0}, 100%, 65%)`;
-}
-
 class TitleAndLegend {
   constructor(titleText, legendeNames) {
     this.text = titleText;
     this.legendeNames = legendeNames;
     this.legendeColors = legendeNames.map((name) =>
-      generateColorFromString(name)
+      generateColorFromString(name),
     );
 
     this.textElement = document.createElement("span");
@@ -312,12 +323,12 @@ class TitleAndLegend {
     this.topElement = document.createElement("div");
     this.topElement.setAttribute(
       "style",
-      "display: flex; justify-content: space-between; height: 3rem;"
+      "display: flex; justify-content: space-between; height: 3rem;",
     );
     this.spanDiv = document.createElement("div");
     this.spanDiv.setAttribute(
       "style",
-      "text-align: right; padding-right: 0.5rem; flex-shrink: 0;"
+      "text-align: right; padding-right: 0.5rem; flex-shrink: 0;",
     );
     this.spanDiv.appendChild(this.textElement);
 
@@ -368,6 +379,12 @@ class TitleAndLegend {
 
 class LineGraph {
   constructor(valueArray, times, names, title) {
+    this.verticalPaddingPercentage = 0.05;
+
+    if (valueArray.every((arr) => arr.length !== valueArray[0].length)) {
+      throw new Error("All arrays must have the same length");
+    }
+
     this.topElement = document.createElement("div");
     this.title = new TitleAndLegend(title, names);
     this.svg = document.createElementNS(SVG_HTML_NAMESPACE, "svg");
@@ -383,7 +400,7 @@ class LineGraph {
     this.topElement.appendChild(this.hoverInfo.topElement);
 
     this.times = times;
-    this.valueArray = valueArray;
+    this.seriesArray = valueArray;
     this.names = names;
 
     this.rulers = [];
@@ -391,7 +408,7 @@ class LineGraph {
     for (let i = 0; i < 5; i++) {
       this.rulers.push(document.createElementNS(SVG_HTML_NAMESPACE, "line"));
       this.rulerCaptions.push(
-        document.createElementNS(SVG_HTML_NAMESPACE, "text")
+        document.createElementNS(SVG_HTML_NAMESPACE, "text"),
       );
     }
 
@@ -408,9 +425,9 @@ class LineGraph {
     });
 
     this.polylines = [];
-    for (let i = 0; i < this.valueArray.length; i++) {
+    for (let i = 0; i < this.seriesArray.length; i++) {
       this.polylines.push(
-        document.createElementNS(SVG_HTML_NAMESPACE, "polyline")
+        document.createElementNS(SVG_HTML_NAMESPACE, "polyline"),
       );
     }
 
@@ -426,9 +443,9 @@ class LineGraph {
 
     this.hoverLine = document.createElementNS(SVG_HTML_NAMESPACE, "line");
     this.hoverCircles = [];
-    for (let i = 0; i < this.valueArray.length; i++) {
+    for (let i = 0; i < this.seriesArray.length; i++) {
       this.hoverCircles.push(
-        document.createElementNS(SVG_HTML_NAMESPACE, "circle")
+        document.createElementNS(SVG_HTML_NAMESPACE, "circle"),
       );
     }
 
@@ -454,17 +471,17 @@ class LineGraph {
       const screenX = this.getClosestPointScreenSpaceX(pointIndex);
       const screenY = this.getClosestPointScreenSpaceYAverage(pointIndex);
 
-      const scaling = Math.floor(this.valueArray[0].length / this.width);
+      const scaling = Math.floor(this.seriesArray[0].length / this.width);
 
       this.hoverInfo.updateInformation(
-        this.approximatedValues,
+        this.compressedSeriesArray,
         pointIndex,
         this.times[scaling * pointIndex],
         this.names,
         screenX,
         screenY,
         this.width,
-        this.height
+        this.height,
       );
 
       setAttributes(this.hoverLine, {
@@ -477,7 +494,7 @@ class LineGraph {
         setAttributes(circle, {
           cx: `${screenX}`,
           cy: `${this.getClosestPointScreenSpaceY(index, pointIndex)}`,
-        })
+        }),
       );
     });
 
@@ -490,127 +507,21 @@ class LineGraph {
     this.svg.addEventListener("mouseleave", (_) => {
       this.hoverLine.setAttribute("class", "hidden");
       this.hoverCircles.forEach((circle) =>
-        circle.setAttribute("class", "hidden")
+        circle.setAttribute("class", "hidden"),
       );
       this.hoverInfo.hide();
-    });
-  }
-
-  getTopElement() {
-    return this.topElement;
-  }
-
-  getMinMax(values) {
-    let max = Number.MIN_VALUE;
-    let min = Number.MAX_VALUE;
-
-    for (const v of values) {
-      max = Math.max(max, v);
-      min = Math.min(min, v);
-    }
-
-    return [min, max];
-  }
-
-  toScreenSpaceHeight(val) {
-    let result =
-      this.paddedHeight *
-      ((val - this.valueMin) / (this.valueMax - this.valueMin));
-    let inverted = this.paddedHeight - result;
-    return inverted + this.paddingSpace;
-  }
-
-  draw() {
-    const bbox = this.svg.getBoundingClientRect();
-    this.width = bbox.width;
-    this.height = bbox.height;
-
-    this.approximatedValues = this.valueArray.map((arr) => {
-      const scaling = Math.floor(arr.length / this.width);
-      if (scaling === 0) {
-        return arr;
-      } else {
-        const result = [];
-        for (let i = 0; i < arr.length / scaling; i++) {
-          result.push(
-            arr
-              .slice(i * scaling, (i + 1) * scaling)
-              .reduce((l, r) => Math.max(l, r))
-          );
-        }
-        return result;
-      }
-    });
-
-    this.verticalPadding = 0.05; // 5%
-    this.paddingSpace = this.height * this.verticalPadding;
-    this.paddingRoom = this.paddingSpace * 2;
-    this.paddedHeight = this.height - this.paddingRoom;
-
-    const [min, max] = this.approximatedValues
-      .map((values) => this.getMinMax(values))
-      .reduce(([lmin, lmax], [rmin, rmax]) => [
-        Math.min(lmin, rmin),
-        Math.max(lmax, rmax),
-      ]);
-
-    this.valueMin = min;
-    this.valueMax = max;
-
-    this.approximatedValues.forEach((values, index) => {
-      if (values.length === 0) {
-        return 0;
-      }
-
-      this.horizontalScaling = this.width / (values.length - 1);
-      const pointsAttribValue = values
-        .map(
-          (val, i) =>
-            `${i * this.horizontalScaling}, ${this.toScreenSpaceHeight(val)}`
-        )
-        .join(" ");
-
-      this.polylines[index].setAttribute("points", pointsAttribValue);
-
-      //
-      // Rulers and their captions
-      //
-      this.rulers.forEach((r, i) => {
-        const denom = this.rulers.length - 1;
-        const y = i * (this.paddedHeight / denom) + this.paddingSpace;
-        setAttributes(r, {
-          x1: "0",
-          y1: `${y}`,
-          x2: `${this.width}`,
-          y2: `${y}`,
-        });
-      });
-
-      this.rulerCaptions.forEach((cap, i) => {
-        const denom1 = this.rulerCaptions.length - 1;
-        const denom2 =
-          (this.valueMax - this.valueMin) / (this.rulerCaptions.length - 1);
-        const y =
-          (this.rulerCaptions.length - i - 1) * (this.paddedHeight / denom1) +
-          this.paddingSpace;
-
-        const rulerValue = i * denom2 + this.valueMin;
-        cap.textContent = `${rulerValue.toFixed(2)}`;
-        cap.setAttribute("x", "0");
-        cap.setAttribute("y", `${y - 2}`);
-      });
     });
   }
 
   getClosestPointIndex(x) {
     const i = Math.floor(x / this.horizontalScaling);
 
-    if (i >= this.approximatedValues[0].length) {
-      return this.approximatedValues[0].length - 1;
+    if (i >= this.compressedSeriesArray[0].length) {
+      return this.compressedSeriesArray[0].length - 1;
     }
 
     const dist = [i, i + 1].map((v) =>
-      Math.abs(x - v * this.horizontalScaling)
+      Math.abs(x - v * this.horizontalScaling),
     );
     return dist[0] < dist[1] ? i : i + 1;
   }
@@ -619,32 +530,153 @@ class LineGraph {
     return pointIndex * this.horizontalScaling;
   }
 
-  getClosestPointScreenSpaceY(valueIndex, pointIndex) {
-    return this.toScreenSpaceHeight(
-      this.approximatedValues[valueIndex][pointIndex]
-    );
-  }
-
   getClosestPointScreenSpaceYAverage(pointIndex) {
-    const numerator = this.approximatedValues
-      .map((val) => {
-        return this.toScreenSpaceHeight(val[pointIndex]);
-      })
+    const numerator = this.compressedSeriesArray
+      .map((val) => val[pointIndex])
       .reduce((l, r) => l + r);
 
-    return numerator / this.approximatedValues.length;
+    return numerator / this.compressedSeriesArray.length;
+  }
+
+  getClosestPointScreenSpaceY(valueIndex, pointIndex) {
+    return this.mappedSeriesArray[valueIndex][pointIndex];
+  }
+
+  updateRulers() {
+    this.rulers.forEach((r, i) => {
+      const denom = this.rulers.length - 1;
+      const y = i * (this.paddedHeight / denom) + this.paddingSpace;
+      setAttributes(r, {
+        x1: "0",
+        y1: `${y}`,
+        x2: `${this.width}`,
+        y2: `${y}`,
+      });
+    });
+  }
+
+  updateRulerCaptions() {
+    this.rulerCaptions.forEach((cap, i) => {
+      const denom1 = this.rulerCaptions.length - 1;
+      const y =
+        (this.rulerCaptions.length - i - 1) * (this.paddedHeight / denom1) +
+        this.paddingSpace;
+
+      const denom2 =
+        (this.valueMax - this.valueMin) / (this.rulerCaptions.length - 1);
+      const rulerValue = i * denom2 + this.valueMin;
+      cap.textContent = `${rulerValue.toFixed(2)}`;
+      setAttributes(cap, {
+        x: "0",
+        y: `${y - 2}`,
+      });
+    });
+  }
+
+  getTopElement() {
+    return this.topElement;
+  }
+
+  updateMinMaxOfGraph(seriesArray) {
+    let max = Number.MIN_VALUE;
+    let min = Number.MAX_VALUE;
+
+    for (const series of seriesArray) {
+      for (const v of series) {
+        max = Math.max(max, v);
+        min = Math.min(min, v);
+      }
+    }
+
+    this.valueMin = min;
+    this.valueMax = max;
+  }
+
+  mapRange(value, fromMin, fromMax, toMax) {
+    const valueFraction = (value - fromMin) / (fromMax - fromMin);
+    const result = toMax * valueFraction;
+    const inverted = toMax - result;
+    return inverted + this.paddingSpace;
+  }
+
+  handleResize() {
+    const bbox = this.svg.getBoundingClientRect();
+    this.width = bbox.width;
+    this.height = bbox.height;
+    this.paddingSpace = this.height * this.verticalPaddingPercentage;
+    this.paddedHeight = this.height - this.paddingSpace * 2;
+
+    this.compressedSeriesArray = this.seriesArray.map((series) =>
+      this.compressSeries(series),
+    );
+
+    // This ia bad, because i required this being called before anything else
+    this.updateMinMaxOfGraph(this.compressedSeriesArray);
+
+    this.mappedSeriesArray = this.compressedSeriesArray.map((series) => {
+      return series.map((value) => {
+        const result = this.mapRange(
+          value,
+          this.valueMin,
+          this.valueMax,
+          this.paddedHeight,
+        );
+        return result;
+      });
+    });
+
+    this.horizontalScaling = this.width / this.compressedSeriesArray[0].length;
+  }
+
+  compressSeries(series) {
+    const datumsPerPixel = Math.floor(series.length / this.width);
+    if (datumsPerPixel <= 1) {
+      return series;
+    }
+
+    const result = [];
+    for (let i = 0; i < series.length / datumsPerPixel; i++) {
+      const windowPosition = i * datumsPerPixel;
+      result.push(
+        Math.max(
+          ...series.slice(windowPosition, windowPosition + datumsPerPixel),
+        ),
+      );
+    }
+    return result;
+  }
+
+  updatePolylines() {
+    this.mappedSeriesArray.forEach((values, index) => {
+      if (values.length === 0) {
+        return;
+      }
+
+      const pointsAttribValue = values
+        .map((val, i) => {
+          const x = i * this.horizontalScaling;
+          const y = val;
+          return `${x}, ${y}`;
+        })
+        .join(" ");
+
+      this.polylines[index].setAttribute("points", pointsAttribValue);
+    });
+  }
+
+  draw() {
+    this.handleResize();
+
+    this.updatePolylines();
+    this.updateRulers();
+    this.updateRulerCaptions();
   }
 }
 
-const insertDiv = document.getElementById("global_insert_space");
-
-function createLineGraphForContainer(containers, timeContainer, title) {
-  const elements = [];
-  const names = [];
-  containers.forEach((c) => elements.push(c.elements));
-  containers.forEach((c) => names.push(c.name));
+function createLineGraph(containers, timeContainer, title) {
+  const { elements, names } = unpackContainers(containers);
   const graph = new LineGraph(elements, timeContainer.elements, names, title);
-  wrapSvgAndAppendToGlobalContainer(insertDiv, graph.getTopElement());
+  wrapSvgAndAppendToGlobalContainer(graph.getTopElement());
   return graph;
 }
 
@@ -652,75 +684,63 @@ let containers = undefined;
 let graphs = [];
 
 window.onload = async () => {
-  containers = await fetchAndParseTGPH();
+  const tgphBytes = await getContainerData();
+  containers = parseTGPH(tgphBytes);
 
-  const timeContainer = containers.filter(
-    (c) => c.name === "Unix timestamp"
-  )[0];
+  const timeContainer = getContainerNamedExactly("Unix timestamp");
+  const co2TimeContainer = getContainerNamedExactly("Unix timestamp CO2");
 
-  const co2TimeContainer = containers.filter(
-    (c) => c.name === "Unix timestamp CO2"
-  )[0];
+  const graphConfigurations = [
+    {
+      title: "Air quality",
+      dataContainerNamePart: "CO2 Concentration [ppm]",
+      timeContainer: co2TimeContainer,
+    },
+    {
+      title: "Network usage",
+      dataContainerNamePart: "Interface enp1s0",
+      timeContainer: timeContainer,
+    },
+    {
+      title: "RAM usage",
+      dataContainerNamePart: "memory",
+      timeContainer: timeContainer,
+    },
+    {
+      title: "CPU Temperature",
+      dataContainerNamePart: "coretemp Core",
+      timeContainer: timeContainer,
+    },
+    {
+      title: "CPU Usage",
+      dataContainerNamePart: "CPU",
+      timeContainer: timeContainer,
+    },
+    {
+      title: "Internal disk usage",
+      dataContainerNamePart: "mmcblk0",
+      timeContainer: timeContainer,
+    },
+    {
+      title: "Disk [sda] usage",
+      dataContainerNamePart: "sda",
+      timeContainer: timeContainer,
+    },
+    {
+      title: "Disk [sdb] usage",
+      dataContainerNamePart: "sdb",
+      timeContainer: timeContainer,
+    },
+  ];
 
+  graphs = graphConfigurations.map((config) =>
+    createLineGraph(
+      getContainersNamedLike(config.dataContainerNamePart),
+      config.timeContainer,
+      config.title,
+    ),
+  );
 
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.includes("CO2 Concentration [ppm]")),
-      co2TimeContainer,
-      "Air quality"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.includes("Interface enp1s0")),
-      timeContainer,
-      "Network usage"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.includes("memory")),
-      timeContainer,
-      "RAM usage"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.startsWith("coretemp Core")),
-      timeContainer,
-      "CPU Temperature"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter(
-        (c) => c.name.startsWith("CPU") && c.name.includes("Usage")
-      ),
-      timeContainer,
-      "CPU Usage"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.includes("mmcblk0")),
-      timeContainer,
-      "Internal disk usage"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.includes("sda")),
-      timeContainer,
-      "Disk [sda] usage"
-    )
-  );
-  graphs.push(
-    createLineGraphForContainer(
-      containers.filter((c) => c.name.includes("sdb")),
-      timeContainer,
-      "Disk [sdb] usage"
-    )
-  );
   graphs.forEach((g) => g.draw());
 };
 
