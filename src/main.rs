@@ -1,7 +1,7 @@
 use std::{
     fs::File,
     io::{Cursor, Read},
-    net::TcpStream,
+    net::{TcpStream, SocketAddr},
     thread::sleep,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -66,10 +66,13 @@ struct CO2Readings {
 }
 
 fn fetch_co2_data_from_sensor() -> Result<CO2Readings, std::io::Error> {
-    let mut stream = TcpStream::connect("192.168.1.15:6969")?;
+    let address: SocketAddr = "192.168.1.15:6969".parse().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let mut stream = TcpStream::connect_timeout(&address, Duration::from_secs(10))?;
+
+    stream.set_read_timeout(Some(Duration::from_secs(10)))?;
 
     let mut buffer: Vec<u8> = Default::default();
-    let bytes_read = stream.read_to_end(&mut buffer)?;
+    let _bytes_read = stream.read_to_end(&mut buffer)?;
     let mut cursor = Cursor::new(buffer);
 
     let latest_time = cursor.read_u64::<LittleEndian>()?;
